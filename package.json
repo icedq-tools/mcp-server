@@ -1,0 +1,54 @@
+{
+  "name": "@icedq/mcp-server",
+  "version": "1.0.2",
+  "description": "MCP server for iceDQ Data Quality Platform — 48 tools for validation, reconciliation, duplicate detection, scheduling, and data exploration.",
+  "main": "icedq-mcp-server.js",
+  "type": "module",
+  "bin": {
+    "icedq-mcp-server": "icedq-mcp-server.js"
+  },
+  "scripts": {
+    "setup": "npm install",
+    "start": "node icedq-mcp-server.js",
+    "build:mcpb": "powershell -ExecutionPolicy Bypass -File ./build-connector.ps1"
+  },
+  "keywords": [
+    "mcp",
+    "icedq",
+    "data-quality",
+    "data-testing",
+    "etl-testing",
+    "data-validation"
+  ],
+  "author": "iceDQ Integration Team",
+  "license": "Apache-2.0",
+  "bugs": {
+    "email": "getsupport@icedq.com"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "keytar": "^7.9.0",
+    "open": "^11.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "icedq-mcp-server.js",
+    "guidance",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ]
+}

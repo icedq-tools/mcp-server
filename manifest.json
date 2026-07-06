@@ -1,0 +1,343 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/dist/mcpb-manifest.schema.json",
+  "manifest_version": "0.3",
+  "name": "icedq-mcp",
+  "display_name": "iceDQ Data Quality Platform",
+  "version": "1.0.2",
+  "description": "Connect to iceDQ for data quality management - tools for validation, checksum, recon, pushdown, duplicate rules, file connectors, workflows, schedules, and data exploration",
+  "long_description": "Comprehensive MCP integration for iceDQ - the end-to-end Data Reliability Platform. 48 tools covering the full data quality lifecycle.\n\n**Rule Creation**\n- **Validation Rules** - Row-level checks: NotNull, Format, ValidValues, Length, Date, Custom Groovy\n- **Duplicate Rules** - Detect duplicates on business keys; handles non-enforcing databases (Snowflake, BigQuery, Redshift)\n- **Pushdown Rules** - SQL-driven aggregate validation: GROUP BY, JOINs, referential integrity\n- **Checksum Rules** - Cross-source numeric comparison (COUNT, SUM, AVG) between two connections\n- **Recon Rules** - Row-level cross-source reconciliation with AI-powered join key and column mapping\n\n**Rule Management**\n- **Update Rules** - Add/remove checks, change source tables on existing rules\n- **Get Rule Details** - Inspect rule configuration, checks, and metadata\n- **Execute Rules** - Run one or more rules on demand; monitor per-run status\n- **Exception Reports** - View row-level failure details for any rule run\n- **Run History** - Paginated execution history for rules, workflows, and schedules\n\n**Connections \u0026 Data Exploration**\n- **Test Connection** - Verify connectivity and credentials before use\n- **Browse Metadata** - Navigate databases, schemas, tables, and columns\n- **Sample \u0026 Profile Data** - Fetch sample rows and generate profiling statistics\n- **AI Check Suggestions** - Intelligent quality check recommendations from data profiling\n\n**Workflows \u0026 Schedules**\n- **Workflows** - Create and manage multi-rule pipelines (sequential or parallel)\n- **Schedules** - One-time, daily, or weekly triggers with timezone support; execute on demand\n- **Parameters** - Reusable configuration values (thresholds, date ranges, reference data)\n\n**Data Warehouse \n- **Warehouse Queries** - Execute structured queries with filtering and aggregation\n\nAll data is processed locally.",
+  "support": "https://support.icedq.com/",
+  "author": {
+    "name": "iceDQ Integration Team",
+    "email": "getsupport@icedq.com",
+    "url": "https://icedq.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/icedq/icedq-mcp"
+  },
+  "privacy_policies": [
+    "https://icedq.com/privacy-policy"
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "icedq",
+    "data-quality",
+    "data-testing",
+    "data-monitoring",
+    "etl-testing",
+    "data-validation",
+    "data-profiling",
+    "data-observability"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "icedq-mcp-server.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/icedq-mcp-server.js"
+      ],
+      "env": {
+        "ICEDQ_BASE_URL": "${user_config.base_url}",
+        "ICEDQ_REALM": "${user_config.realm}",
+        "ICEDQ_CLIENT_ID": "${user_config.client_id}",
+        "ICEDQ_CLIENT_SECRET": "${user_config.client_secret}",
+        "AUTH_TYPE": "${user_config.auth_type}",
+        "ICEDQ_USERNAME": "${user_config.username}",
+        "ICEDQ_PASSWORD": "${user_config.password}",
+        "ICEDQ_ORG_ID": "${user_config.org_id}",
+        "DEBUG": "${user_config.debug_mode}",
+        "NODE_ENV": "production",
+        "REQUEST_TIMEOUT": "${user_config.request_timeout}",
+        "VERIFY_SSL": "${user_config.verify_ssl}"
+      }
+    }
+  },
+  "user_config": {
+    "base_url": {
+      "type": "string",
+      "title": "iceDQ Base URL",
+      "description": "The base URL of your iceDQ instance (e.g., https://app.icedq.net)",
+      "required": true,
+      "default": "https://app.icedq.net"
+    },
+    "realm": {
+      "type": "string",
+      "title": "Realm Name",
+      "description": "The authentication realm name (e.g., icedq or iam.icedq)",
+      "required": true,
+      "default": "iam.icedq"
+    },
+    "client_id": {
+      "type": "string",
+      "title": "Client ID",
+      "description": "OAuth client ID for API authentication",
+      "required": true,
+      "default": ""
+    },
+    "client_secret": {
+      "type": "string",
+      "title": "Client Secret",
+      "description": "OAuth client secret for API authentication.",
+      "required": true,
+      "sensitive": true,
+      "default": ""
+    },
+    "auth_type": {
+      "type": "string",
+      "title": "Authentication Type",
+      "description": "Authentication method. Use \u0027username_password\u0027 to authenticate with your iceDQ username and password.",
+      "required": true,
+      "default": "username_password"
+    },
+    "username": {
+      "type": "string",
+      "title": "Username",
+      "description": "Your iceDQ username.",
+      "required": true,
+      "default": ""
+    },
+    "password": {
+      "type": "string",
+      "title": "Password",
+      "description": "Your iceDQ password",
+      "sensitive": true,
+      "required": true,
+      "default": ""
+    },
+    "org_id": {
+      "type": "string",
+      "title": "Organization ID",
+      "description": "Your iceDQ organization ID (e.g., org-iam.icedq)",
+      "required": true,
+      "default": "org-iam.icedq"
+    },
+    "debug_mode": {
+      "type": "boolean",
+      "title": "Debug Mode",
+      "description": "Enable detailed logging for troubleshooting",
+      "required": false,
+      "default": false
+    },
+    "request_timeout": {
+      "type": "number",
+      "title": "Request Timeout (seconds)",
+      "description": "Timeout for API requests in seconds",
+      "required": false,
+      "default": 60
+    },
+    "verify_ssl": {
+      "type": "boolean",
+      "title": "Verify SSL Certificates",
+      "description": "Enable SSL certificate verification. Set to false for self-signed certificates (testing only)",
+      "required": false,
+      "default": false
+    }
+  },
+  "tools": [
+    {
+      "name": "list_workspaces",
+      "description": "List all workspaces in the iceDQ instance. Returns workspace metadata including id, name, accountId, status, createdBy, and createdAt. Starting point for any iceDQ workflow — workspaceId is required by all other tools."
+    },
+    {
+      "name": "list_connections",
+      "description": "List all data source connections in a workspace. Returns connection metadata including id, name, connectorId, type, status (ACTIVE/BROKEN/INCOMPLETE), serviceProvider, and authType. Only ACTIVE connections can be queried. Supports pagination."
+    },
+    {
+      "name": "test_connection",
+      "description": "Test the connectivity of an iceDQ connection. Verifies the connection is reachable and credentials are valid. Use connectionId from list_connections."
+    },
+    {
+      "name": "list_folders",
+      "description": "List all folders in a workspace. Returns folder hierarchy and metadata (id, name, path, parentId, hasChild, state). Use nameFilter for partial-match search. Use folderId when creating rules, workflows, or schedules."
+    },
+    {
+      "name": "list_rules",
+      "description": "List and search rules in a workspace (Validation, Recon, Duplicate, Pushdown, Checksum). Supports filters: folderId (exact), nameFilter (partial), stateFilter (Published/Draft/Deleted), ruleTypeFilter. Results paginated by most recently updated."
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a new folder to organize rules, workflows, schedules, and parameters. Supports parent (root) and child (nested) folders. Folder names must be alphanumeric with underscores only."
+    },
+    {
+      "name": "move_rules",
+      "description": "Move one or more rules to a different folder within a workspace. Async operation — returns taskInstanceId immediately. Always call check_task_status afterward to confirm completion."
+    },
+    {
+      "name": "move_workflows",
+      "description": "Move one or more workflows to a different destination folder. Async operation — returns taskInstanceId. Always call check_task_status to confirm completion."
+    },
+    {
+      "name": "check_task_status",
+      "description": "Check status of an async task (rule/workflow moves). Returns status (Completed/Running/Failed/Pending), duration, and affected entities. Always call after move_rules or move_workflows. Wait 2-3 seconds before first check."
+    },
+    {
+      "name": "get_database_metadata",
+      "description": "Get database metadata and connection details for a connection. Returns connection info and database capabilities."
+    },
+    {
+      "name": "fetch_sample_data",
+      "description": "Fetch real sample data by executing SQL on the database. Supports Table mode (schema+table) or Custom SQL mode. Returns actual rows with column metadata. Use after list_columns to explore data."
+    },
+    {
+      "name": "profile_data",
+      "description": "Analyze sample data to generate profiling statistics per column: nullCount, nullPercentage, uniqueCount, dataType. Use after fetch_sample_data. Feed results to suggest_quality_checks."
+    },
+    {
+      "name": "suggest_quality_checks",
+      "description": "AI-powered analysis of profiled data to suggest row-level quality checks compatible with create_validation_rule (NotNull, ValidValues, Format, Length). Returns a checksJson string — pass it directly to create_validation_rule."
+    },
+    {
+      "name": "create_validation_rule",
+      "description": "Create a row-level validation rule with built-in checks: NotNull, ValidValues, Format (Email/Phone/SSN/ZipCode/URL/IP), Length, Date, Custom Groovy. Combine ALL checks for the same table into ONE rule. Published immediately."
+    },
+    {
+      "name": "create_duplicate_rule",
+      "description": "Create a duplicate detection rule for single or multiple columns. Supports Table mode and Custom SQL mode. For non-enforcing platforms (Snowflake, BigQuery, Redshift) check declared PKs too. Published immediately."
+    },
+    {
+      "name": "create_pushdown_rule",
+      "description": "Create a SQL-driven pushdown rule for aggregate/batch validation. SQL returns failures: 0 rows = pass, N rows = fail. Use for: GROUP BY/HAVING duplicates, LEFT JOIN referential integrity, cross-table checks. NOT for simple column checks."
+    },
+    {
+      "name": "create_checksum_rule",
+      "description": "Create a cross-source checksum rule comparing a single numeric value (COUNT, SUM, AVG) between source and target connections. Each SQL must return 1 row, 1 numeric column. Supports auto-generated COUNT(*) or custom SQL."
+    },
+    {
+      "name": "analyze_recon_mapping",
+      "description": "Analyze source and target table columns to suggest join keys and column comparison checks for reconciliation. Returns confidence-scored suggestions. ALWAYS call this before create_recon_rule."
+    },
+    {
+      "name": "create_recon_rule",
+      "description": "Create a row-level cross-source reconciliation rule. Compares rows between source and target using join keys and column checks. Detects orphaned rows (a-b, b-a) and column differences (Xp). ALWAYS call analyze_recon_mapping first."
+    },
+    {
+      "name": "update_rule",
+      "description": "Update an existing rule (Validation, Duplicate, Recon, Checksum, Pushdown). Auto-detects rule type. Supports renaming, changing source/target datasets, adding/removing checks, and updating join keys. Rule is published after every successful update."
+    },
+    {
+      "name": "get_rule",
+      "description": "Fetch full details of a rule by ID or name. Returns rule configuration, checks, state, metadata, and source connection info. Use before update_rule to inspect current configuration."
+    },
+    {
+      "name": "execute_rule",
+      "description": "Execute a rule or workflow asynchronously. Returns instanceId. Use check_workflow_run_status to monitor progress, then get_workflow_run_result for detailed results. Supports Validation, Duplicate, Recon, Checksum, Pushdown rules, and workflows."
+    },
+    {
+      "name": "check_workflow_run_status",
+      "description": "Check the current execution status of a workflow run using its instanceId. Statuses: Running, Success, Warning, Pending. Use after execute_rule to monitor async execution progress."
+    },
+    {
+      "name": "get_workflow_run_result",
+      "description": "Retrieve detailed results of a completed workflow run: per-activity status, exit codes, source/target record counts, and error details. Call after check_workflow_run_status confirms completion."
+    },
+    {
+      "name": "get_rule_workflow_run_history",
+      "description": "Retrieve execution history for a rule or workflow. Returns run rows: workflowInstanceId, objectInstanceId, start/end timestamps, status, exitCode, error, instanceSummary. Supports pagination."
+    },
+    {
+      "name": "get_checks_exception_report",
+      "description": "Retrieve row-level failure details for a rule run. Returns the specific rows that failed each check, with column values and failure reasons. Use after get_rule_workflow_run_history to get the instanceId."
+    },
+    {
+      "name": "get_exception_report_url",
+      "description": "Returns the iceDQ UI URL to view the exception report for an executed rule or workflow instance. Requires objectId, instanceId (objectInstanceId), and entityType (\u0027rule\u0027 or \u0027workflow\u0027)."
+    },
+    {
+      "name": "create_workflow",
+      "description": "Create a new workflow to execute multiple rules sequentially. Each rule becomes an ExecuteRule activity with automatic index assignment. Use list_rules to find rule IDs."
+    },
+    {
+      "name": "add_rules_to_workflow",
+      "description": "Add rules to an existing workflow. Fetches current workflow configuration, appends new ExecuteRule activities, and re-indexes automatically. Use list_rules to find rule IDs."
+    },
+    {
+      "name": "remove_rules_from_workflow",
+      "description": "Remove rules from an existing workflow. Fetches current configuration, filters out specified rules, and re-indexes remaining activities. Returns updated activity count."
+    },
+    {
+      "name": "list_workflows",
+      "description": "List all workflows in a workspace. Returns workflow metadata including id, name, template, workflowType, isActive, and state. Supports pagination."
+    },
+    {
+      "name": "create_schedule",
+      "description": "Create a schedule to automatically run rules or workflows. Supports Onetime, Daily (hourly interval), and Weekly recurrence with timezone support."
+    },
+    {
+      "name": "list_schedules",
+      "description": "List all schedules in a workspace with pagination. Returns schedule metadata including trigger configuration and associated rules."
+    },
+    {
+      "name": "modify_schedule",
+      "description": "Modify an existing schedule\u0027s configuration: name, timing, recurrence pattern, timezone, and associated rule. Use list_schedules to get scheduleId first."
+    },
+    {
+      "name": "add_rules_workflows_to_schedule",
+      "description": "Add additional rules and/or workflows to an existing schedule. Merges new jobs with existing schedule configuration. Supports batch addition."
+    },
+    {
+      "name": "execute_schedule",
+      "description": "Execute a schedule on demand. Fetches the existing schedule configuration, executes it, and returns the schedule ID and name."
+    },
+    {
+      "name": "get_scheduler_runs_history",
+      "description": "Retrieve the execution history of scheduled jobs. Returns paginated list of past scheduler run instances with status, timestamps, and task information."
+    },
+    {
+      "name": "list_databases",
+      "description": "List available databases for a connection. Uses cached results by default; retries without cache automatically on cache misses."
+    },
+    {
+      "name": "list_schemas",
+      "description": "List schemas for a connection (optionally within a database). Uses cached results by default; retries without cache on misses."
+    },
+    {
+      "name": "list_tables",
+      "description": "List tables for a schema (and optional database). Uses cached results by default; retries without cache on misses."
+    },
+    {
+      "name": "list_columns",
+      "description": "List column metadata for a table (databaseName optional). Uses cached results by default; retries without cache on misses."
+    },
+    {
+      "name": "create_parameter",
+      "description": "Create a reusable parameter in a workspace folder. A parameter holds key-value pairs for use in rules, workflows, and schedules (thresholds, date ranges, status codes). Alphanumeric + underscore names only."
+    },
+    {
+      "name": "update_parameter",
+      "description": "Update an existing parameter\u0027s name, description, or key-value pairs. Full update — provide the complete parameters array. Any key-value pairs not included will be removed."
+    },
+    {
+      "name": "parse_csv_and_create_parameter",
+      "description": "Parse a CSV file and create a parameter from its contents. Combines CSV upload/parsing and parameter creation. Useful for bulk-loading reference data into iceDQ parameters."
+    },
+    {
+      "name": "datawarehouse_query_schema",
+      "description": "Get the data warehouse query schema definition. Returns available datasets, columns, metrics, dimensions, named joins, derived columns, and supported operators. Call first in a fresh session before datawarehouse_query_executor."
+    },
+    {
+      "name": "validate_and_explain_structured",
+      "description": "Validate a structured query payload and explain what SQL it will generate (dry-run, no execution). Use before datawarehouse_query_executor to verify complex queries."
+    },
+    {
+      "name": "datawarehouse_query_executor",
+      "description": "Execute a structured, schema-validated query against a registered dataset. Never accepts raw SQL. All fields must match the dataset schema returned by datawarehouse_query_schema."
+    },
+    {
+      "name": "get_guidance",
+      "description": "Get step-by-step workflow guidance for iceDQ operations. Topics: create_validation_rules, create_recon_rules, create_checksum_rules, create_duplicate_rules, create_pushdown_rules, groovy_expressions, async_monitoring, scheduling_pipelines, and more."
+    }
+  ],
+  "icon": "icon.png",
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": "\u003e=20.0.0"
+    }
+  }
+}

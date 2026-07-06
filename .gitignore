@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+*.mcpb
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+deploy/notes.txt
+# Credentials & tokens
+access_token.json
+*.token.json
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/
+
+# Binary documents (use Google Docs/SharePoint, not git)
+*.docx
+*.xlsx
+*.pptx
