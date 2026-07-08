@@ -62,7 +62,7 @@ results — no UI switching required.
 
 ### Step 1 — Download the Extension
 
-Download the latest `icedq-mcp-server.mcpb` file from the [Releases page](https://github.com/icedq/icedq-mcp/releases).
+Download the latest `icedq-mcp-server.mcpb` file from the [Releases page](https://github.com/icedq-tools/mcp-server/releases).
 
 ---
 
