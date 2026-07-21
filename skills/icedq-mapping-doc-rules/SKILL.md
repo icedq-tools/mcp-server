@@ -1,6 +1,6 @@
 ---
-name: mapping-doc-rule-creation
-description: Creates iceDQ rules from a mapping document. Use when the user uploads or mentions a mapping doc, ETL mapping sheet, or source-to-target mapping.
+name: icedq-mapping-doc-rules
+description: Uses a mapping document provided by the user (Excel, CSV, or Word source-to-target mapping specification) to identify and generate iceDQ rules — Validation, Duplicate, Checksum, Recon, and Pushdown. Use whenever the user uploads or points to a mapping doc or ETL mapping sheet and wants rules derived from it, e.g. "create rules from this mapping document", "here is our source-to-target spec, generate the checks", "turn this column mapping into iceDQ rules". Do NOT use for interactive from-scratch authoring without a mapping doc (use icedq-author-rules), for rules from ETL or SQL code (use icedq-etl-code-rules), or for running or scheduling existing rules (use icedq-run-and-report / icedq-schedule-and-monitor).
 server_compat: ">=2.0.0"
 ---
 

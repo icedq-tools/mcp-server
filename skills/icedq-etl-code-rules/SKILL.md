@@ -1,6 +1,7 @@
 ---
-name: etl-code-rule-creation
-description: Creates ETL rules in iceDQ. Use when the user asks to create ETL rules, data pipeline rules, or source-to-target validation rules.
+name: icedq-etl-code-rules
+description: Uses ETL/transformation code provided by the user (SQL stored procedures, dbt, PySpark, Spark Scala, SSIS, Informatica, Airflow, and similar) to identify and generate iceDQ rules — Validation, Duplicate, Checksum, Recon, and Pushdown. Use whenever the user shares ETL or pipeline code and wants data-quality rules extracted from it, e.g. "generate iceDQ rules from this stored procedure", "derive checks from our dbt model", "what rules should I add for this ETL job". Do NOT use for interactive from-scratch authoring without code (use icedq-author-rules), for mapping-document-driven rules (use icedq-mapping-doc-rules), or for running or scheduling existing rules (use icedq-run-and-report / icedq-schedule-and-monitor).
+server_compat: ">=2.0.0"
 ---
 
 ## GOAL
