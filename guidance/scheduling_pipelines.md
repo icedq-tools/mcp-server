@@ -1,6 +1,6 @@
 PIPELINE BUILDING WORKFLOW:
 1. Create rules (validation, duplicate, recon, etc.)
-2. Organize into folder: create_folder > move_rules_or_workflows (type='rule')
+2. Organize into folder: create_folder > move_rules
 3. Create workflow: create_workflow with rule IDs (Sequential execution only)
 4. Create schedule: create_schedule with workflow/rule ID, template, start date, timezone
 5. Optionally add more rules/workflows: add_rules_workflows_to_schedule
@@ -22,9 +22,9 @@ SCHEDULE PARAMETERS:
 
 WORKFLOW MANAGEMENT:
 - create_workflow: Creates with initial rules, template must be "Sequential"
-- update_workflow_rules (action="add"): Add more rules to existing workflow
-- update_workflow_rules (action="remove"): Remove rules from workflow
-- move_rules_or_workflows (type='workflow'): Move to different folder (async)
+- add_rules_to_workflow: Add more rules to existing workflow
+- remove_rules_from_workflow: Remove rules from workflow
+- move_workflows: Move to different folder (async)
 
 NAMING CONVENTIONS:
 - Folders: {Domain}_{Environment}_Rules (e.g., Insurance_Staging_Rules)

@@ -28,4 +28,5 @@ ANTI-SPRAWL BEST PRACTICES:
 - Group related rules into workflows for batch execution
 
 MOVE OPERATIONS:
-- move_rules_or_workflows: Async, returns taskInstanceId > check_task_status (use type='rule' for rules, type='workflow' for workflows)
+- move_rules: Async, returns taskInstanceId > check_task_status
+- move_workflows: Async > check_task_status

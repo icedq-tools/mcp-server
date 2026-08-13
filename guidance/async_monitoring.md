@@ -1,19 +1,20 @@
 ASYNC TOOL MAPPING:
 | Operation        | Tool             | Returns          | Monitor With               | ID Format  |
 |------------------|------------------|------------------|----------------------------|------------|
-| Execute rule/workflow | execute_rules_or_workflows | successList[].instanceId | get_workflow_run_status_or_result | integer |
+| Execute rule     | execute_rule     | instanceId       | check_workflow_run_status   | integer    |
 | Execute schedule | execute_schedule | success          | get_scheduler_runs_history  | scheduleId |
-| Move rules/workflows | move_rules_or_workflows | taskInstanceId | check_task_status        | tins-xxx   |
+| Move rules       | move_rules       | taskInstanceId   | check_task_status           | tins-xxx   |
+| Move workflows   | move_workflows   | taskInstanceId   | check_task_status           | tins-xxx   |
 
 EXECUTION MONITORING WORKFLOW:
-1. execute_rules_or_workflows > get successList[].instanceId (integer per item)
+1. execute_rule > get instanceId (integer)
 2. Wait 2-3 seconds
-3. get_workflow_run_status_or_result (action=status) with instanceId > get status (Success/Warning/Running/Pending)
-4. If completed: get_workflow_run_status_or_result (action=result) with same instanceId > get activity details
+3. check_workflow_run_status with instanceId > get status (Success/Warning/Running/Pending)
+4. If completed: get_workflow_run_result with same instanceId > get activity details
 5. For exception details: get_checks_exception_report with objectInstanceId from activity
 
 MOVE MONITORING WORKFLOW:
-1. move_rules_or_workflows > get taskInstanceId (tins-xxx)
+1. move_rules > get taskInstanceId (tins-xxx)
 2. Wait 2-3 seconds
 3. check_task_status with taskInstanceId > get status (Completed/Running/Failed/Pending)
 

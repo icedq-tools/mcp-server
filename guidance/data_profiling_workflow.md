@@ -4,11 +4,11 @@ HUMAN-IN-THE-LOOP (RECOMMENDED DEFAULT):
 - Before executing any SQL-based sampling, confirm the target (database/schema/table or customSql) with the user.
 
 PROFILING WORKFLOW:
-1. fetch_db_sample_data: Get sample rows from table
+1. fetch_sample_data: Get sample rows from table
    - Azure SQL: Use databaseName="" (empty string), not actual database name
    - Standard mode: schemaName + tableName
    - Custom SQL mode: customSql for filtered/joined data
-2. profile_data: Pass the data array from fetch_db_sample_data response
+2. profile_data: Pass the data array from fetch_sample_data response
    - Returns per-column: nullCount, nullPercentage, uniqueCount, dataType, isPotentialKey
 3. suggest_quality_checks: Pass the profile output
    - Returns suggested checks with priority (high/medium/low)
@@ -26,4 +26,4 @@ INTERPRETING PROFILE RESULTS:
 FOR RICHER PROFILING:
 - Use tables with known data issues (nulls, duplicates) for meaningful results
 - Clean tables will return empty suggestions — this is correct behavior
-- For column-level metadata: list_connection_metadata(entity="column") returns datatype, length, isPrimaryKey
+- For column-level metadata: list_columns returns datatype, length, isPrimaryKey

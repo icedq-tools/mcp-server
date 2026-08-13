@@ -1,11 +1,11 @@
 {
   "name": "@icedq/mcp-server",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "MCP server for iceDQ Data Quality Platform — 48 tools for validation, reconciliation, duplicate detection, scheduling, and data exploration.",
-  "main": "icedq-mcp-server.js",
+  "main": "dist/icedq-mcp-server.js",
   "type": "module",
   "bin": {
-    "icedq-mcp-server": "icedq-mcp-server.js"
+    "icedq-mcp-server": "dist/icedq-mcp-server.js"
   },
   "scripts": {
     "setup": "npm install",
@@ -45,8 +45,7 @@
     "node": ">=20.0.0"
   },
   "files": [
-    "icedq-mcp-server.js",
-    "guidance",
+    "dist",
     "README.md",
     "LICENSE",
     "NOTICE"
