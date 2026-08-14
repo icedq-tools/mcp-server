@@ -3,6 +3,10 @@
   "mcpName": "io.github.icedq-tools/mcp-server",
   "version": "1.0.5",
   "description": "MCP server for iceDQ Data Reliability Platform — 48 tools for validation, reconciliation, duplicate detection, scheduling, and data exploration.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/icedq-tools/mcp-server.git"
+  },
   "main": "icedq-mcp-server.js",
   "type": "module",
   "bin": {
