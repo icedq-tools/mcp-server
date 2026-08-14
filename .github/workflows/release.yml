@@ -5,9 +5,9 @@ name: Release
 # Authentication is handled via npm Trusted Publishing (OIDC) — no NPM_TOKEN.
 # The `release` environment gates every publish behind required reviewers.
 #
-# NOTE: this repository is PRIVATE, so npm provenance cannot be generated
-# (provenance requires a public source repo). Provenance is therefore
-# explicitly disabled below; tokenless OIDC auth still works from a private repo.
+# This repository is public, so npm provenance is enabled below — each publish
+# gets a signed attestation (via Sigstore) linking the package back to this
+# exact workflow run and commit. Verify with: npm audit signatures.
 #
 # PREREQUISITES (one-time, on npmjs.com / GitHub):
 #   1. Register a Trusted Publisher for @icedq/mcp-server:
@@ -66,5 +66,5 @@ jobs:
         # This keeps `latest` stable while shipping betas to opt-in testers (npm i @icedq/mcp-server@beta).
       - run: npm publish --tag "$NPM_TAG" # auth automatic via Trusted Publishing
         env:
-          NPM_CONFIG_PROVENANCE: 'false' # private repo — provenance unavailable
+          NPM_CONFIG_PROVENANCE: 'true' # public repo — enables npm provenance attestation
           NPM_TAG: ${{ github.event_name == 'release' && (github.event.release.prerelease && 'beta' || 'latest') || (github.event.inputs.tag || 'latest') }}

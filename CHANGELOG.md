@@ -4,6 +4,50 @@ All notable changes to the iceDQ MCP Server project are documented in this file.
 
 ---
 
+## [1.0.5]
+
+### Fixed
+- **MCP Registry listing** — added the missing `mcpName` field
+  (`io.github.icedq-tools/mcp-server`) to `package.json`. This field had
+  never been committed to any branch; it was only patched into the npm
+  tarball for the one-off `1.0.3` publish and lost again in `1.0.4`,
+  which silently broke validation on the official
+  [MCP Registry](https://registry.modelcontextprotocol.io) listing.
+- **Product name** — corrected "iceDQ Data Quality Platform" to the
+  correct product name, "iceDQ Data Reliability Platform", across
+  `package.json`, `manifest.json`, `README.md`, and
+  `SUBMISSION_CHECKLIST.md`.
+- **Claude Desktop setup form defaults** — `manifest.json` was
+  pre-filling incorrect values for new installs: `user_config.realm`
+  default corrected from `iam.icedq` to `icedq`, and
+  `user_config.org_id` default corrected from `org-iam.icedq` to
+  `org-icedq`. Both values are still shown as examples in the
+  descriptions alongside the corrected default.
+- **`ICEDQ_ORG_ID` documentation** — `server.json` and `README.md` now
+  show both `org-icedq` and `org-iam.icedq` as example values instead
+  of only the incorrect one.
+- **npm provenance** — `.github/workflows/release.yml` was explicitly
+  disabling npm provenance under a stale comment claiming the repo is
+  private. The repo is public, so provenance is enabled going forward;
+  `1.0.5` is the first version published with a signed attestation.
+
+### Changed
+- Version synchronized to `1.0.5` across `package.json`, `server.json`,
+  and `manifest.json` (previously drifted — `manifest.json` was still
+  at `1.0.2`).
+- **README.md** rewritten and scoped strictly to the `release/1.0.0`
+  feature set (no `2.0.0`-only tools or the skills bundle). The
+  "Capability / What You Can Do" table was rebuilt from the actual
+  48-tool list in `manifest.json`, grouped into 11 categories, instead
+  of a generic hand-written list. Added an explicit callout that
+  `ICEDQ_BASE_URL` has no default — every organization runs its own
+  iceDQ instance — and corrected `icedq`/`iam.icedq` and
+  `org-icedq`/`org-iam.icedq` example values throughout the Claude
+  Desktop, VS Code + Copilot Chat, VS Code + Claude Code, and Cursor
+  installation sections.
+
+---
+
 ## [1.0.2]
 
 ### Added

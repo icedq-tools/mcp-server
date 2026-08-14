@@ -6,13 +6,13 @@
     "url": "https://github.com/icedq-tools/mcp-server",
     "source": "github"
   },
-  "version": "1.0.3",
+  "version": "1.0.5",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@icedq/mcp-server",
-      "version": "1.0.3",
+      "version": "1.0.5",
       "transport": { "type": "stdio" },
       "environmentVariables": [
         { "name": "ICEDQ_BASE_URL", "description": "The base URL of your iceDQ instance (e.g., https://app.icedq.net)", "isRequired": true, "format": "string" },
@@ -23,7 +23,7 @@
         { "name": "ICEDQ_USERNAME", "description": "Your iceDQ username. Required when AUTH_TYPE is 'username_password'.", "isRequired": false, "format": "string" },
         { "name": "ICEDQ_PASSWORD", "description": "Your iceDQ password. Required when AUTH_TYPE is 'username_password'.", "isRequired": false, "isSecret": true, "format": "string" },
         { "name": "TOKENS_PATH", "description": "Path to JSON file containing access_token and refresh_token. Required when AUTH_TYPE is 'access_token'.", "isRequired": false, "format": "filepath" },
-        { "name": "ICEDQ_ORG_ID", "description": "Your iceDQ organization ID (e.g., org-iam.icedq)", "isRequired": true, "format": "string" },
+        { "name": "ICEDQ_ORG_ID", "description": "Your iceDQ organization ID (e.g., org-icedq or org-iam.icedq)", "isRequired": true, "format": "string" },
         { "name": "VERIFY_SSL", "description": "Enable SSL certificate verification. Set to false only for self-signed certs in testing.", "isRequired": false, "format": "boolean" },
         { "name": "REQUEST_TIMEOUT", "description": "Timeout for API requests, in seconds", "isRequired": false, "format": "number" }
       ]

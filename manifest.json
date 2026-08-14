@@ -2,10 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/dist/mcpb-manifest.schema.json",
   "manifest_version": "0.3",
   "name": "icedq-mcp",
-  "display_name": "iceDQ Data Quality Platform",
-  "version": "1.0.2",
+  "display_name": "iceDQ Data Reliability Platform",
+  "version": "1.0.5",
   "description": "Connect to iceDQ for data quality management - tools for validation, checksum, recon, pushdown, duplicate rules, file connectors, workflows, schedules, and data exploration",
-  "long_description": "Comprehensive MCP integration for iceDQ - the end-to-end Data Reliability Platform. 48 tools covering the full data quality lifecycle.\n\n**Rule Creation**\n- **Validation Rules** - Row-level checks: NotNull, Format, ValidValues, Length, Date, Custom Groovy\n- **Duplicate Rules** - Detect duplicates on business keys; handles non-enforcing databases (Snowflake, BigQuery, Redshift)\n- **Pushdown Rules** - SQL-driven aggregate validation: GROUP BY, JOINs, referential integrity\n- **Checksum Rules** - Cross-source numeric comparison (COUNT, SUM, AVG) between two connections\n- **Recon Rules** - Row-level cross-source reconciliation with AI-powered join key and column mapping\n\n**Rule Management**\n- **Update Rules** - Add/remove checks, change source tables on existing rules\n- **Get Rule Details** - Inspect rule configuration, checks, and metadata\n- **Execute Rules** - Run one or more rules on demand; monitor per-run status\n- **Exception Reports** - View row-level failure details for any rule run\n- **Run History** - Paginated execution history for rules, workflows, and schedules\n\n**Connections \u0026 Data Exploration**\n- **Test Connection** - Verify connectivity and credentials before use\n- **Browse Metadata** - Navigate databases, schemas, tables, and columns\n- **Sample \u0026 Profile Data** - Fetch sample rows and generate profiling statistics\n- **AI Check Suggestions** - Intelligent quality check recommendations from data profiling\n\n**Workflows \u0026 Schedules**\n- **Workflows** - Create and manage multi-rule pipelines (sequential or parallel)\n- **Schedules** - One-time, daily, or weekly triggers with timezone support; execute on demand\n- **Parameters** - Reusable configuration values (thresholds, date ranges, reference data)\n\n**Data Warehouse \n- **Warehouse Queries** - Execute structured queries with filtering and aggregation\n\nAll data is processed locally.",
+  "long_description": "Comprehensive MCP integration for iceDQ - the end-to-end Data Reliability Platform. 48 tools covering the full data quality lifecycle.\n\n**Rule Creation**\n- **Validation Rules** - Row-level checks: NotNull, Format, ValidValues, Length, Date, Custom Groovy\n- **Duplicate Rules** - Detect duplicates on business keys; handles non-enforcing databases (Snowflake, BigQuery, Redshift)\n- **Pushdown Rules** - SQL-driven aggregate validation: GROUP BY, JOINs, referential integrity\n- **Checksum Rules** - Cross-source numeric comparison (COUNT, SUM, AVG) between two connections\n- **Recon Rules** - Row-level cross-source reconciliation with AI-powered join key and column mapping\n\n**Rule Management**\n- **Update Rules** - Add/remove checks, change source tables on existing rules\n- **Get Rule Details** - Inspect rule configuration, checks, and metadata\n- **Execute Rules** - Run one or more rules on demand; monitor per-run status\n- **Exception Reports** - View row-level failure details for any rule run\n- **Run History** - Paginated execution history for rules, workflows, and schedules\n\n**Connections & Data Exploration**\n- **Test Connection** - Verify connectivity and credentials before use\n- **Browse Metadata** - Navigate databases, schemas, tables, and columns\n- **Sample & Profile Data** - Fetch sample rows and generate profiling statistics\n- **AI Check Suggestions** - Intelligent quality check recommendations from data profiling\n\n**Workflows & Schedules**\n- **Workflows** - Create and manage multi-rule pipelines (sequential or parallel)\n- **Schedules** - One-time, daily, or weekly triggers with timezone support; execute on demand\n- **Parameters** - Reusable configuration values (thresholds, date ranges, reference data)\n\n**Data Warehouse \n- **Warehouse Queries** - Execute structured queries with filtering and aggregation\n\nAll data is processed locally.",
   "support": "https://support.icedq.com/",
   "author": {
     "name": "iceDQ Integration Team",
@@ -67,7 +67,7 @@
       "title": "Realm Name",
       "description": "The authentication realm name (e.g., icedq or iam.icedq)",
       "required": true,
-      "default": "iam.icedq"
+      "default": "icedq"
     },
     "client_id": {
       "type": "string",
@@ -87,7 +87,7 @@
     "auth_type": {
       "type": "string",
       "title": "Authentication Type",
-      "description": "Authentication method. Use \u0027username_password\u0027 to authenticate with your iceDQ username and password.",
+      "description": "Authentication method. Use 'username_password' to authenticate with your iceDQ username and password.",
       "required": true,
       "default": "username_password"
     },
@@ -109,9 +109,9 @@
     "org_id": {
       "type": "string",
       "title": "Organization ID",
-      "description": "Your iceDQ organization ID (e.g., org-iam.icedq)",
+      "description": "Your iceDQ organization ID (e.g., org-icedq or org-iam.icedq)",
       "required": true,
-      "default": "org-iam.icedq"
+      "default": "org-icedq"
     },
     "debug_mode": {
       "type": "boolean",
@@ -242,7 +242,7 @@
     },
     {
       "name": "get_exception_report_url",
-      "description": "Returns the iceDQ UI URL to view the exception report for an executed rule or workflow instance. Requires objectId, instanceId (objectInstanceId), and entityType (\u0027rule\u0027 or \u0027workflow\u0027)."
+      "description": "Returns the iceDQ UI URL to view the exception report for an executed rule or workflow instance. Requires objectId, instanceId (objectInstanceId), and entityType ('rule' or 'workflow')."
     },
     {
       "name": "create_workflow",
@@ -270,7 +270,7 @@
     },
     {
       "name": "modify_schedule",
-      "description": "Modify an existing schedule\u0027s configuration: name, timing, recurrence pattern, timezone, and associated rule. Use list_schedules to get scheduleId first."
+      "description": "Modify an existing schedule's configuration: name, timing, recurrence pattern, timezone, and associated rule. Use list_schedules to get scheduleId first."
     },
     {
       "name": "add_rules_workflows_to_schedule",
@@ -306,7 +306,7 @@
     },
     {
       "name": "update_parameter",
-      "description": "Update an existing parameter\u0027s name, description, or key-value pairs. Full update — provide the complete parameters array. Any key-value pairs not included will be removed."
+      "description": "Update an existing parameter's name, description, or key-value pairs. Full update — provide the complete parameters array. Any key-value pairs not included will be removed."
     },
     {
       "name": "parse_csv_and_create_parameter",
@@ -337,7 +337,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": "\u003e=20.0.0"
+      "node": ">=20.0.0"
     }
   }
 }
