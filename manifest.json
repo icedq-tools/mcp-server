@@ -3,9 +3,9 @@
   "manifest_version": "0.3",
   "name": "icedq-mcp",
   "display_name": "iceDQ Data Reliability Platform",
-  "version": "1.0.5",
+  "version": "2.0.0-beta",
   "description": "Connect to iceDQ for data quality management - tools for validation, checksum, recon, pushdown, duplicate rules, file connectors, workflows, schedules, and data exploration",
-  "long_description": "Comprehensive MCP integration for iceDQ - the end-to-end Data Reliability Platform. 48 tools covering the full data quality lifecycle.\n\n**Rule Creation**\n- **Validation Rules** - Row-level checks: NotNull, Format, ValidValues, Length, Date, Custom Groovy\n- **Duplicate Rules** - Detect duplicates on business keys; handles non-enforcing databases (Snowflake, BigQuery, Redshift)\n- **Pushdown Rules** - SQL-driven aggregate validation: GROUP BY, JOINs, referential integrity\n- **Checksum Rules** - Cross-source numeric comparison (COUNT, SUM, AVG) between two connections\n- **Recon Rules** - Row-level cross-source reconciliation with AI-powered join key and column mapping\n\n**Rule Management**\n- **Update Rules** - Add/remove checks, change source tables on existing rules\n- **Get Rule Details** - Inspect rule configuration, checks, and metadata\n- **Execute Rules** - Run one or more rules on demand; monitor per-run status\n- **Exception Reports** - View row-level failure details for any rule run\n- **Run History** - Paginated execution history for rules, workflows, and schedules\n\n**Connections & Data Exploration**\n- **Test Connection** - Verify connectivity and credentials before use\n- **Browse Metadata** - Navigate databases, schemas, tables, and columns\n- **Sample & Profile Data** - Fetch sample rows and generate profiling statistics\n- **AI Check Suggestions** - Intelligent quality check recommendations from data profiling\n\n**Workflows & Schedules**\n- **Workflows** - Create and manage multi-rule pipelines (sequential or parallel)\n- **Schedules** - One-time, daily, or weekly triggers with timezone support; execute on demand\n- **Parameters** - Reusable configuration values (thresholds, date ranges, reference data)\n\n**Data Warehouse \n- **Warehouse Queries** - Execute structured queries with filtering and aggregation\n\nAll data is processed locally.",
+  "long_description": "Comprehensive MCP integration for iceDQ - the end-to-end Data Reliability Platform. 49 tools covering the full data quality lifecycle.\n\n**Rule Creation**\n- **Validation Rules** - Row-level checks: NotNull, Format, ValidValues, Length, Date, Custom Groovy\n- **Duplicate Rules** - Detect duplicates on business keys; handles non-enforcing databases (Snowflake, BigQuery, Redshift)\n- **Pushdown Rules** - SQL-driven aggregate validation: GROUP BY, JOINs, referential integrity\n- **Checksum Rules** - Cross-source numeric comparison (COUNT, SUM, AVG) between two connections\n- **Recon Rules** - Row-level cross-source reconciliation with AI-powered join key and column mapping\n- **API Connectors** - Validation and Recon rules against REST API endpoints\n- **File Connectors** - Rule creation across flat-file, flat-file-sql, parquet, Excel, JSON, and XML sources\n\n**Rule Management**\n- **Update Rules** - Add/remove checks, change source tables on existing rules\n- **Get Rule Details** - Inspect rule configuration, checks, and metadata\n- **Execute Rules** - Run one or more rules or workflows on demand; monitor per-run status\n- **Exception Reports** - View row-level failure details for any rule run\n- **Run History** - Paginated execution history for rules, workflows, and schedules\n- **Custom Functions** - Create/manage Java/Groovy user-defined functions (UDFs) for checks\n\n**Connections & Data Exploration**\n- **Test Connection** - Verify connectivity and credentials before use\n- **Browse Metadata** - Navigate databases, schemas, tables, and columns\n- **Sample & Profile Data** - Fetch sample rows and generate profiling statistics\n- **AI Check Suggestions** - Intelligent quality check recommendations from data profiling\n\n**Workflows & Schedules**\n- **Workflows** - Create and manage multi-rule pipelines (sequential or parallel)\n- **Schedules** - One-time, daily, or weekly triggers with timezone support; execute on demand\n- **Parameters** - Reusable configuration values (thresholds, date ranges, reference data)\n\n**Data Warehouse \n- **Warehouse Queries** - Execute structured queries with filtering and aggregation\n\nAll data is processed locally.",
   "support": "https://support.icedq.com/",
   "author": {
     "name": "iceDQ Integration Team",
@@ -142,7 +142,7 @@
     },
     {
       "name": "list_connections",
-      "description": "List all data source connections in a workspace. Returns connection metadata including id, name, connectorId, type, status (ACTIVE/BROKEN/INCOMPLETE), serviceProvider, and authType. Only ACTIVE connections can be queried. Supports pagination."
+      "description": "List all data source connections in a workspace, including database, file, and REST API connections. Returns connection metadata including id, name, connectorId, type, status (ACTIVE/BROKEN/INCOMPLETE), serviceProvider, and authType. Only ACTIVE connections can be queried. Supports filtering by connector type and pagination."
     },
     {
       "name": "test_connection",
@@ -150,7 +150,7 @@
     },
     {
       "name": "list_folders",
-      "description": "List all folders in a workspace. Returns folder hierarchy and metadata (id, name, path, parentId, hasChild, state). Use nameFilter for partial-match search. Use folderId when creating rules, workflows, or schedules."
+      "description": "List all folders in a workspace. Returns folder hierarchy and metadata (id, name, path, parentId, hasChild, state). Use nameFilter for partial-match search. Use folderId when creating rules, workflows, schedules, or parameters."
     },
     {
       "name": "list_rules",
@@ -161,28 +161,24 @@
       "description": "Create a new folder to organize rules, workflows, schedules, and parameters. Supports parent (root) and child (nested) folders. Folder names must be alphanumeric with underscores only."
     },
     {
-      "name": "move_rules",
-      "description": "Move one or more rules to a different folder within a workspace. Async operation — returns taskInstanceId immediately. Always call check_task_status afterward to confirm completion."
-    },
-    {
-      "name": "move_workflows",
-      "description": "Move one or more workflows to a different destination folder. Async operation — returns taskInstanceId. Always call check_task_status to confirm completion."
+      "name": "move_rules_or_workflows",
+      "description": "Move one or more rules or workflows to a different folder within a workspace, controlled by a type parameter ('rule' or 'workflow'). Async operation — returns taskInstanceId immediately. Always call check_task_status afterward to confirm completion."
     },
     {
       "name": "check_task_status",
-      "description": "Check status of an async task (rule/workflow moves). Returns status (Completed/Running/Failed/Pending), duration, and affected entities. Always call after move_rules or move_workflows. Wait 2-3 seconds before first check."
+      "description": "Check status of an async task (rule/workflow moves). Returns status (Completed/Running/Failed/Pending), duration, and affected entities. Always call after move_rules_or_workflows. Wait 2-3 seconds before first check."
     },
     {
       "name": "get_database_metadata",
-      "description": "Get database metadata and connection details for a connection. Returns connection info and database capabilities."
+      "description": "Get database metadata and connection details for a connection. Returns connection info and database capabilities. For detailed schema/table/column browsing, use list_connection_metadata."
     },
     {
-      "name": "fetch_sample_data",
-      "description": "Fetch real sample data by executing SQL on the database. Supports Table mode (schema+table) or Custom SQL mode. Returns actual rows with column metadata. Use after list_columns to explore data."
+      "name": "fetch_db_sample_data",
+      "description": "Fetch real sample data from a database connection by executing SQL. Supports Table mode (databaseName+schemaName+tableName) or Custom SQL mode (any read-only SELECT). Returns actual rows with column metadata. Use after list_connection_metadata to explore data."
     },
     {
       "name": "profile_data",
-      "description": "Analyze sample data to generate profiling statistics per column: nullCount, nullPercentage, uniqueCount, dataType. Use after fetch_sample_data. Feed results to suggest_quality_checks."
+      "description": "Analyze sample data to generate profiling statistics per column: nullCount, nullPercentage, uniqueCount, dataType. Use after fetch_db_sample_data or fetch_file_sample_data. Feed results to suggest_quality_checks."
     },
     {
       "name": "suggest_quality_checks",
@@ -206,31 +202,27 @@
     },
     {
       "name": "analyze_recon_mapping",
-      "description": "Analyze source and target table columns to suggest join keys and column comparison checks for reconciliation. Returns confidence-scored suggestions. ALWAYS call this before create_recon_rule."
+      "description": "Analyze source and target columns (database, file, or API) to suggest join keys and column comparison checks for reconciliation. Returns confidence-scored suggestions. ALWAYS call this before create_recon_rule."
     },
     {
       "name": "create_recon_rule",
-      "description": "Create a row-level cross-source reconciliation rule. Compares rows between source and target using join keys and column checks. Detects orphaned rows (a-b, b-a) and column differences (Xp). ALWAYS call analyze_recon_mapping first."
+      "description": "Create a row-level cross-source reconciliation rule between two database connections. Compares rows between source and target using join keys and column checks. Detects orphaned rows (a-b, b-a) and column differences (Xp). ALWAYS call analyze_recon_mapping first."
     },
     {
       "name": "update_rule",
-      "description": "Update an existing rule (Validation, Duplicate, Recon, Checksum, Pushdown). Auto-detects rule type. Supports renaming, changing source/target datasets, adding/removing checks, and updating join keys. Rule is published after every successful update."
+      "description": "Update an existing rule (Validation, Duplicate, Recon, Checksum, Pushdown), including wiring a blank source/target dataset, adding/removing checks, changing join keys, and renaming. Supports bulk updates across multiple rules in a single call. Rule is published after every successful update."
     },
     {
       "name": "get_rule",
       "description": "Fetch full details of a rule by ID or name. Returns rule configuration, checks, state, metadata, and source connection info. Use before update_rule to inspect current configuration."
     },
     {
-      "name": "execute_rule",
-      "description": "Execute a rule or workflow asynchronously. Returns instanceId. Use check_workflow_run_status to monitor progress, then get_workflow_run_result for detailed results. Supports Validation, Duplicate, Recon, Checksum, Pushdown rules, and workflows."
+      "name": "execute_rules_or_workflows",
+      "description": "Execute one or more rules and/or workflows in a single call. Accepts a list of rule-/wkfl- IDs and returns per-item successList/failureList with instanceIds. Use get_workflow_run_status_or_result to monitor progress and retrieve results."
     },
     {
-      "name": "check_workflow_run_status",
-      "description": "Check the current execution status of a workflow run using its instanceId. Statuses: Running, Success, Warning, Pending. Use after execute_rule to monitor async execution progress."
-    },
-    {
-      "name": "get_workflow_run_result",
-      "description": "Retrieve detailed results of a completed workflow run: per-activity status, exit codes, source/target record counts, and error details. Call after check_workflow_run_status confirms completion."
+      "name": "get_workflow_run_status_or_result",
+      "description": "Check the status of a workflow run, or retrieve its detailed results, controlled by an action parameter ('status' or 'result'). Use after execute_rules_or_workflows to monitor async execution and then fetch per-activity outcomes."
     },
     {
       "name": "get_rule_workflow_run_history",
@@ -249,12 +241,8 @@
       "description": "Create a new workflow to execute multiple rules sequentially. Each rule becomes an ExecuteRule activity with automatic index assignment. Use list_rules to find rule IDs."
     },
     {
-      "name": "add_rules_to_workflow",
-      "description": "Add rules to an existing workflow. Fetches current workflow configuration, appends new ExecuteRule activities, and re-indexes automatically. Use list_rules to find rule IDs."
-    },
-    {
-      "name": "remove_rules_from_workflow",
-      "description": "Remove rules from an existing workflow. Fetches current configuration, filters out specified rules, and re-indexes remaining activities. Returns updated activity count."
+      "name": "update_workflow_rules",
+      "description": "Add or remove rules from an existing workflow, controlled by an action parameter ('add' or 'remove'). Appends new ExecuteRule activities or filters existing ones out, and re-indexes automatically. Use list_rules to find rule IDs."
     },
     {
       "name": "list_workflows",
@@ -285,32 +273,48 @@
       "description": "Retrieve the execution history of scheduled jobs. Returns paginated list of past scheduler run instances with status, timestamps, and task information."
     },
     {
-      "name": "list_databases",
-      "description": "List available databases for a connection. Uses cached results by default; retries without cache automatically on cache misses."
+      "name": "list_connection_metadata",
+      "description": "Unified metadata crawler for a connection. Use the entity parameter ('database', 'schema', 'table', or 'column') to browse a database connection's structure. Uses cached results by default; retries without cache automatically on cache misses."
     },
     {
-      "name": "list_schemas",
-      "description": "List schemas for a connection (optionally within a database). Uses cached results by default; retries without cache on misses."
+      "name": "list_parameters",
+      "description": "List and search all parameters in a workspace. Parameters are reusable key-value variables referenced in rules, workflows, and schedules. Supports filters: folderId, nameFilter. Use before create_or_update_parameter to check for existing parameters."
     },
     {
-      "name": "list_tables",
-      "description": "List tables for a schema (and optional database). Uses cached results by default; retries without cache on misses."
+      "name": "get_parameter",
+      "description": "Get the complete details of a specific parameter by its ID, including all key-value pairs. Use list_parameters first to find the parameterId."
     },
     {
-      "name": "list_columns",
-      "description": "List column metadata for a table (databaseName optional). Uses cached results by default; retries without cache on misses."
-    },
-    {
-      "name": "create_parameter",
-      "description": "Create a reusable parameter in a workspace folder. A parameter holds key-value pairs for use in rules, workflows, and schedules (thresholds, date ranges, status codes). Alphanumeric + underscore names only."
-    },
-    {
-      "name": "update_parameter",
-      "description": "Update an existing parameter's name, description, or key-value pairs. Full update — provide the complete parameters array. Any key-value pairs not included will be removed."
+      "name": "create_or_update_parameter",
+      "description": "Create a new parameter or update an existing one, controlled by an action parameter ('create' or 'update'). A parameter holds key-value pairs for use in rules, workflows, and schedules (thresholds, date ranges, status codes). Alphanumeric + underscore names only. Update is a full replace of the key-value pairs."
     },
     {
       "name": "parse_csv_and_create_parameter",
       "description": "Parse a CSV file and create a parameter from its contents. Combines CSV upload/parsing and parameter creation. Useful for bulk-loading reference data into iceDQ parameters."
+    },
+    {
+      "name": "list_files",
+      "description": "List all files available in a flat-file connection (e.g., Azure Blob, S3, local storage). Use before fetch_file_sample_data to discover file names."
+    },
+    {
+      "name": "fetch_file_sample_data",
+      "description": "Preview sample data from a file connection (flat-file, flat-file-sql, parquet, Excel, JSON, XML). Registers the file schema and creates or updates a draft rule for Validation, Duplicate, Recon, Checksum, or Pushdown rule types. Follow up with update_rule to add checks and publish."
+    },
+    {
+      "name": "fetch_api_sample_data",
+      "description": "Fetch sample data from a REST API connection for API Validation or API Recon rules. Registers the API schema (endpoint, headers, pagination, auth) and creates a draft rule. Follow up with update_rule to add checks and publish."
+    },
+    {
+      "name": "manage_custom_function",
+      "description": "Create or update a user-defined custom function (UDF) in Java or Groovy, controlled by an action parameter ('create' or 'update'). Evaluator functions return true/false for validation checks; Processor functions return a transformed/looked-up value."
+    },
+    {
+      "name": "list_custom_functions",
+      "description": "List all user-defined custom functions (UDFs) in a workspace. Returns className, language (Java/Groovy), type, status, and timestamps. Use before referencing a function in a validation rule."
+    },
+    {
+      "name": "get_custom_function",
+      "description": "Get the complete details of a specific custom function, including its current source code. Always call this before manage_custom_function with action='update' so edits are applied to the real existing code."
     },
     {
       "name": "datawarehouse_query_schema",
@@ -326,7 +330,7 @@
     },
     {
       "name": "get_guidance",
-      "description": "Get step-by-step workflow guidance for iceDQ operations. Topics: create_validation_rules, create_recon_rules, create_checksum_rules, create_duplicate_rules, create_pushdown_rules, groovy_expressions, async_monitoring, scheduling_pipelines, and more."
+      "description": "Get step-by-step workflow guidance for iceDQ operations. Topics: create_validation_rules, create_api_validation_rules, create_recon_rules, create_api_recon_rules, create_checksum_rules, create_duplicate_rules, create_pushdown_rules, groovy_expressions, async_monitoring, scheduling_pipelines, rule_organization, data_profiling_workflow, exception_report_analysis, datawarehouse_queries."
     }
   ],
   "icon": "icon.png",
@@ -337,7 +341,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=20.0.0"
+      "node": ">=18.0.0"
     }
   }
 }

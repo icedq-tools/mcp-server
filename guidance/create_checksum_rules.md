@@ -1,3 +1,9 @@
+SAP ECC CHECKSUM RULES:
+- If source or target connectorId="sap-ecc" → use custom SQL for that side (table name only, no schema prefix)
+- Row count: `SELECT COUNT(*) AS SOURCE_COUNT FROM MARA`. For SUM/AVG, ask user which column to aggregate first.
+
+COLUMN SELECTION: For flat-file connections, ask user which column to aggregate before creating rule
+
 HUMAN-IN-THE-LOOP (RECOMMENDED DEFAULT):
 - Checksum rules compare TWO sides (source vs target). This workflow must be approval-gated.
 - Do NOT auto-pick source/target connections, tables, or SQL when multiple options exist.
@@ -193,9 +199,11 @@ CHECK EXPRESSION PATTERN (TRUE = PASS):
 - Percentage: Math.abs(S.[SRC] - T.[TGT]) / S.[SRC] * 100 <= 1 > pass within 1%
 
 REQUIREMENTS:
-- Each SQL must return exactly 1 row, 1 numeric column
+- Each SQL MUST return exactly 1 row, 1 numeric column (VALIDATION ENFORCED)
+- Multiple columns in SQL will cause a validation error at rule creation
 - Column must have an alias (SOURCE_COUNT, TARGET_COUNT, or custom)
 - Source and target aliases must be different
+- For multiple metrics (e.g., COUNT + SUM), create separate checksum rules
 
 NAMING CONVENTION: {SourceTable}_vs_{TargetTable}_Checksum
 

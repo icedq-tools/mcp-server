@@ -12,11 +12,11 @@ Explore what data exists, understand its structure, and assess quality.
 list_workspaces
   → list_connections (workspaceId)
     → get_database_metadata (connectionId)
-      → list_databases (connectionId)
-        → list_schemas (connectionId, databaseName)
-          → list_tables (connectionId, schemaName)
-            → list_columns (connectionId, tableName)
-              → fetch_sample_data (connectionId, tableName)
+      → list_connection_metadata (connectionId, entity="database")
+        → list_connection_metadata (connectionId, entity="schema")
+          → list_connection_metadata (connectionId, entity="table")
+            → list_connection_metadata (connectionId, entity="column")
+              → fetch_db_sample_data (connectionId, tableName)
                 → profile_data (sampleData)
 ```
 
@@ -30,13 +30,14 @@ list_workspaces
 Profile data and let AI suggest checks, then create a rule with those checks.
 
 ```
-fetch_sample_data (connectionId, tableName)
+fetch_db_sample_data (connectionId, tableName)
   → profile_data (sampleData)
     → suggest_quality_checks (profileData)
-      → create_validation_rule (folderId, ruleName, checks)
-        → execute_rule (ruleId)
-          → check_task_status (taskInstanceId)
-            → get_rule_workflow_run_history (ruleId)
+      → create_validation_rule (folderId, ruleName, checksJson)
+        → execute_rules_or_workflows (objectIds=[ruleId])
+          → get_workflow_run_status_or_result (action="status")
+            → get_workflow_run_status_or_result (action="result")
+              → get_rule_workflow_run_history (ruleId)
 ```
 
 **What the user says:**
@@ -51,11 +52,11 @@ Find duplicate records on one or more columns.
 ```
 list_workspaces
   → list_connections (workspaceId)
-    → list_tables (connectionId, schemaName)
-      → fetch_sample_data (connectionId, tableName)
+    → list_connection_metadata (connectionId, entity="table")
+      → fetch_db_sample_data (connectionId, tableName)
         → create_duplicate_rule (connectionId, tableName, duplicateColumns)
-          → execute_rule (ruleId)
-            → check_task_status (taskInstanceId)
+          → execute_rules_or_workflows (objectIds=[ruleId])
+            → get_workflow_run_status_or_result (action="result")
               → get_rule_workflow_run_history (ruleId)
 ```
 
@@ -70,11 +71,11 @@ Validate that foreign key relationships hold between tables using custom SQL.
 
 ```
 list_connections (workspaceId)
-  → list_tables (connectionId, schemaName)
-    → list_columns (connectionId, tableName)  [for both tables]
+  → list_connection_metadata (connectionId, entity="table")
+    → list_connection_metadata (connectionId, entity="column")  [for both tables]
       → create_pushdown_rule (connectionId, sql)
-        → execute_rule (ruleId)
-          → check_task_status (taskInstanceId)
+        → execute_rules_or_workflows (objectIds=[ruleId])
+          → get_workflow_run_status_or_result (action="result")
             → get_rule_workflow_run_history (ruleId)
 ```
 
@@ -88,16 +89,16 @@ list_connections (workspaceId)
 Create multiple rules, group them into a workflow, schedule it for recurring execution, and monitor results.
 
 ```
-fetch_sample_data (table1) → profile_data → suggest_quality_checks
+fetch_db_sample_data (table1) → profile_data → suggest_quality_checks
   → create_validation_rule (table1 checks)
 
-fetch_sample_data (table2) → profile_data → suggest_quality_checks
+fetch_db_sample_data (table2) → profile_data → suggest_quality_checks
   → create_validation_rule (table2 checks)
 
 create_duplicate_rule (table1, duplicateColumns)
 create_pushdown_rule (cross-table SQL)
 
-  → create_workflow (all ruleIds, Sequential/Parallel)
+  → create_workflow (all ruleIds, Sequential)
     → create_schedule (workflowId, Daily/Weekly template)
       → execute_schedule (scheduleId)
         → get_scheduler_runs_history (scheduleId)
@@ -117,7 +118,7 @@ list_folders (workspaceId)
   → create_folder (parentFolder)
     → create_folder (childFolder, parentId)
       → list_rules (workspaceId, nameFilter/stateFilter)
-        → move_rules (destinationFolderId, ruleIds)
+        → move_rules_or_workflows (destinationFolderId, ids=[ruleIds], type="rule")
           → check_task_status (taskInstanceId)
 ```
 
@@ -133,11 +134,11 @@ Build and modify workflows, then execute and track status in real-time.
 ```
 list_rules (workspaceId)
   → list_workflows (workspaceId)
-    → create_workflow (ruleIds, Sequential/Parallel)
-      or add_rules_to_workflow (workflowId, newRuleIds)
-      or remove_rules_from_workflow (workflowId, ruleIds)
-        → execute_rule (workflowId)
-          → check_workflow_run_status (instanceId)
+    → create_workflow (ruleIds, Sequential)
+      or update_workflow_rules (workflowId, ruleIds=[newRuleIds], action="add")
+      or update_workflow_rules (workflowId, ruleIds=[ruleIds], action="remove")
+        → execute_rules_or_workflows (objectIds=[workflowId])
+          → get_workflow_run_status_or_result (action="status")
             → get_rule_workflow_run_history (workflowId)
 ```
 
@@ -169,9 +170,9 @@ list_workflows (workspaceId)
 Create reusable parameters and use them across rules, including bulk creation from CSV.
 
 ```
-create_parameter (parameterName, key, value)
+create_or_update_parameter (action="create", parameterName, parameterKey, parameterValue)
   or parse_csv_and_create_parameter (csvFilePath)
-    → update_parameter (parameterId, updated key-value pairs)
+    → create_or_update_parameter (action="update", parameterId, updated parameters[])
 ```
 
 **What the user says:**
@@ -201,7 +202,7 @@ Use custom SQL queries to explore database metadata when standard metadata tools
 ```
 list_connections (workspaceId)
   → get_database_metadata (connectionId)
-    → fetch_sample_data (connectionId, customSql)
+    → fetch_db_sample_data (connectionId, customSql)
 ```
 
 **What the user says:**
@@ -217,8 +218,8 @@ Complete end-to-end setup from discovery to monitored execution for a single tab
 ```
 list_workspaces
   → list_connections (workspaceId)
-    → list_schemas → list_tables → list_columns
-      → fetch_sample_data (tableName)
+    → list_connection_metadata (entity="schema") → (entity="table") → (entity="column")
+      → fetch_db_sample_data (tableName)
         → profile_data (sampleData)
           → suggest_quality_checks (profileData)
             → list_folders / create_folder
@@ -226,9 +227,9 @@ list_workspaces
               → create_duplicate_rule (uniqueness checks)
               → create_pushdown_rule (aggregate/cross-table checks)
                 → create_workflow (all ruleIds)
-                  → execute_rule (workflowId)
-                    → check_task_status (taskInstanceId)
-                      → check_workflow_run_status (instanceId)
+                  → execute_rules_or_workflows (objectIds=[workflowId])
+                    → get_workflow_run_status_or_result (action="status")
+                      → get_workflow_run_status_or_result (action="result")
                         → get_rule_workflow_run_history (workflowId)
 ```
 
@@ -241,12 +242,12 @@ list_workspaces
 
 | Goal | Tool Chain |
 |------|------------|
-| Explore data | `list_workspaces` → `list_connections` → `list_databases` → `list_schemas` → `list_tables` → `list_columns` → `fetch_sample_data` |
-| Profile & suggest checks | `fetch_sample_data` → `profile_data` → `suggest_quality_checks` |
-| Create & run validation rule | `create_validation_rule` → `execute_rule` → `check_task_status` → `get_rule_workflow_run_history` |
-| Create & run duplicate rule | `create_duplicate_rule` → `execute_rule` → `check_task_status` → `get_rule_workflow_run_history` |
-| Create & run pushdown rule | `create_pushdown_rule` → `execute_rule` → `check_task_status` → `get_rule_workflow_run_history` |
+| Explore data | `list_workspaces` → `list_connections` → `list_connection_metadata` (database/schema/table/column) → `fetch_db_sample_data` |
+| Profile & suggest checks | `fetch_db_sample_data` → `profile_data` → `suggest_quality_checks` |
+| Create & run validation rule | `create_validation_rule` → `execute_rules_or_workflows` → `get_workflow_run_status_or_result` → `get_rule_workflow_run_history` |
+| Create & run duplicate rule | `create_duplicate_rule` → `execute_rules_or_workflows` → `get_workflow_run_status_or_result` → `get_rule_workflow_run_history` |
+| Create & run pushdown rule | `create_pushdown_rule` → `execute_rules_or_workflows` → `get_workflow_run_status_or_result` → `get_rule_workflow_run_history` |
 | Build workflow & schedule | `create_workflow` → `create_schedule` → `execute_schedule` → `get_scheduler_runs_history` |
-| Organize rules | `list_folders` → `create_folder` → `list_rules` → `move_rules` → `check_task_status` |
-| Manage parameters | `create_parameter` / `parse_csv_and_create_parameter` → `update_parameter` |
+| Organize rules | `list_folders` → `create_folder` → `list_rules` → `move_rules_or_workflows` → `check_task_status` |
+| Manage parameters | `create_or_update_parameter` (action=create) / `parse_csv_and_create_parameter` → `create_or_update_parameter` (action=update) |
 | DW analytics | `datawarehouse_query_schema` → `validate_and_explain_structured` → `datawarehouse_query_executor` |

@@ -4,6 +4,44 @@ All notable changes to the iceDQ MCP Server project are documented in this file.
 
 ---
 
+## [2.0.0-beta]
+
+### Added
+- **API connectors** — fetch sample data from REST APIs (`fetch_api_sample_data`)
+  and author API Validation and API Recon rules; new `get_guidance` topics
+  `create_api_validation_rules` and `create_api_recon_rules`.
+- **File connectors** — full rule creation across flat-file, flat-file-sql,
+  parquet, Excel, JSON, and XML sources.
+- **User-defined functions (UDFs)** — create/manage Java/Groovy functions for checks.
+- **Reusable parameters** — bind parameters to SQL and checks for data-driven rules.
+- **Agent skills bundled with the server**: `icedq-author-rules`,
+  `icedq-run-and-report`, `icedq-schedule-and-monitor`, `icedq-mapping-doc-rules`,
+  `icedq-etl-code-rules` — each stamped `server_compat: ">=2.0.0"`.
+- **`icedq-dre` plugin + marketplace** (`.claude-plugin/`) bundling the MCP server
+  and skills for one-step install; `skills/COMPATIBILITY.md` documenting the
+  skill↔server version policy.
+
+### Changed
+- **Consolidated tool API** — granular 1.x tools merged into parameterized tools
+  (`execute_rules_or_workflows`, `get_workflow_run_status_or_result`,
+  `move_rules_or_workflows`, `list_connection_metadata`, `update_workflow_rules`,
+  `fetch_db_sample_data` / `fetch_file_sample_data`).
+- Connector display name → **"iceDQ Data Reliability Platform"**; **license**
+  aligned to **Apache-2.0** across `package.json`, `manifest.json`, and README.
+- **Skill names standardized** under the `icedq-` prefix (folder == name):
+  `mapping-doc-rule-creation` → `icedq-mapping-doc-rules`,
+  `etl-rule-creation` → `icedq-etl-code-rules`.
+- `build-production.ps1` bundles all skills via a `skills/*` glob to every editor target.
+
+### Security
+- **customSql read-only guard** (`assertReadOnlySql`) on all user-supplied SQL entry
+  points — sample fetch and validation/duplicate/pushdown/checksum rule create+update.
+- **Log redaction** of SQL and data-bearing fields, and of secrets embedded in URL
+  query strings; datawarehouse query payload no longer logged verbatim.
+- **API base-URL SSRF guard** (`assertSafeApiUrl`) — rejects non-http(s) schemes,
+  embedded credentials, and cloud-metadata hosts.
+- **Tighter file permissions** — token-store file fallback `0600`, log directory `0700`.
+
 ## [1.0.5]
 
 ### Fixed

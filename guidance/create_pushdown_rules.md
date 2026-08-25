@@ -1,3 +1,8 @@
+SAP ECC PUSHDOWN RULES:
+- SAP connection: connectorId="sap-ecc" → SQL must use table name only (no schema.table prefix)
+- Flow: list_connection_metadata(entity="table"/"column") → show columns → ask user "Which columns to include and what defines a failing row?" (max 8-12 cols, 512-byte row limit)
+- Example: `SELECT MATNR FROM MARA WHERE MATNR IS NULL` (rows returned = failures)
+
 HUMAN-IN-THE-LOOP (RECOMMENDED DEFAULT):
 - Pushdown rules are powerful and can be costly; treat them as approval-gated.
 - Do NOT run or modify SQL without user confirmation of the exact target connection and SQL text.

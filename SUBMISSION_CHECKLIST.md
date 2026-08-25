@@ -21,7 +21,7 @@
 | 1.10 | `mcp_config.args` references the correct entry file | ✅ `icedq-mcp-server.js` |
 | 1.11 | `icon` field present and file exists (`icon.png`) | ✅ |
 | 1.12 | `compatibility.platforms` declared | ✅ `["darwin", "win32", "linux"]` |
-| 1.13 | `compatibility.runtimes.node` declared | ✅ `>=20.0.0` |
+| 1.13 | `compatibility.runtimes.node` declared | ✅ `>=18.0.0` |
 | 1.14 | `homepage` and `support` fields present | ✅ `docs.icedq.com` |
 
 ---

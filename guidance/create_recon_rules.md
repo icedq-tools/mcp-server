@@ -1,3 +1,8 @@
+SAP ECC RECON RULES:
+- If source or target connectorId="sap-ecc" → use customSql for that side (table name only, no schema prefix)
+- Flow: list_connection_metadata(entity="column") for the SAP side → ask user "Which columns for join key and comparison?" (max 8-12 cols, 512-byte row limit) → analyze_recon_mapping → create_recon_rule
+- Example: `customSql: "SELECT MATNR, MTART, MEINS FROM MARA"`
+
 HUMAN-IN-THE-LOOP (RECOMMENDED DEFAULT):
 - Recon rules compare row-level data across TWO sides (source vs target). This workflow must be approval-gated.
 - Do NOT auto-pick source/target connections, tables, join keys, or mapped columns when multiple options exist.
@@ -30,7 +35,7 @@ APPROVAL GATES (do these in order and WAIT after each):
    - DB-only: create_recon_rule with approved join key and check columns as comma-separated strings
    - File involved: update_rule with joinKeys + checksToAdd (draft already created by fetch_file_sample_data)
 9) Optional execution (separate approval)
-   - Only run execute_rule if user explicitly says to execute now.
+   - Only run execute_rules_or_workflows if user explicitly says to execute now.
 
 ---
 
@@ -46,7 +51,7 @@ STANDARD WORKFLOW (DB-only connections):
 5. Create rule: create_recon_rule with comma-separated join key and check column strings
    - joinKeySourceColumns: "employee_id", joinKeyTargetColumns: "empid"
    - checkSourceColumns: "first_name,salary", checkTargetColumns: "name,salary"
-6. Execute: execute_rule > get_workflow_run_status_or_result (action=status) > get_workflow_run_status_or_result (action=result)
+6. Execute: execute_rules_or_workflows > get_workflow_run_status_or_result (action=status) > get_workflow_run_status_or_result (action=result)
 7. Review exceptions: get_checks_exception_report — look at difftype column:
    - ANB = source orphan (exists in source, not in target)
    - BNA = target orphan (exists in target, not in source)

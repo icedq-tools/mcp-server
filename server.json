@@ -6,13 +6,13 @@
     "url": "https://github.com/icedq-tools/mcp-server",
     "source": "github"
   },
-  "version": "1.0.5",
+  "version": "2.0.0-beta",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@icedq/mcp-server",
-      "version": "1.0.5",
+      "version": "2.0.0-beta",
       "transport": { "type": "stdio" },
       "environmentVariables": [
         { "name": "ICEDQ_BASE_URL", "description": "The base URL of your iceDQ instance (e.g., https://app.icedq.net)", "isRequired": true, "format": "string" },

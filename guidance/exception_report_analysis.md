@@ -5,12 +5,12 @@ When a user asks for an exception report, ALWAYS ask before calling any tool:
 - User wants the download URL → call get_exception_report_url instead
 
 MULTIPLE RUN INSTANCES — ALWAYS ASK:
-Before calling get_exception_report_url or get_checks_exception_report, fetch the run history via get_rule_workflow_run_history (for rules) or get_workflow_run_result (for workflows). If more than one completed instance exists, present the list with run date and status and ask the user which instance they want the exception report for. Do NOT auto-select the latest.
+Before calling get_exception_report_url or get_checks_exception_report, fetch the run history via get_rule_workflow_run_history (for rules) or get_workflow_run_status_or_result (action=result, for workflows). If more than one completed instance exists, present the list with run date and status and ask the user which instance they want the exception report for. Do NOT auto-select the latest.
 
 RETRIEVING EXCEPTION REPORTS:
 1. From rule name: list_rules (find ruleId) > get_rule_workflow_run_history (find objectInstanceId) > get_checks_exception_report
-2. From execution: execute_rule (get instanceId) > get_workflow_run_status_or_result (action=result, find activity instance.id) > get_checks_exception_report OR get_exception_report_url
-4. For workflow exception report: get_workflow (find workflowId and workflowName) > get_workflow_run_result (list instances, ask user to pick if >1) > get_exception_report_url (entityType="workflow")
+2. From execution: execute_rules_or_workflows (get instanceId) > get_workflow_run_status_or_result (action=result, find activity instance.id) > get_checks_exception_report OR get_exception_report_url
+4. For workflow exception report: list_workflows (find workflowId and workflowName) > get_workflow_run_status_or_result (action=result, list instances, ask user to pick if >1) > get_exception_report_url (entityType="workflow")
 
 
 EXPORT EXCEPTION REPORT TOOL (get_exception_report_url):

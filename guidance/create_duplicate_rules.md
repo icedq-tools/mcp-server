@@ -1,3 +1,8 @@
+SAP ECC DUPLICATE RULES:
+- SAP connection: connectorId="sap-ecc" → ⚠️ ALWAYS use customSql (table name only, no schema prefix)
+- Flow: list_connection_metadata(entity="table") → pick table → list columns → ask user "Which columns to check for duplicates?" (max 8-12 cols, 512-byte row limit) → fetch_db_sample_data(customSql=...) → create_duplicate_rule(customSql=..., duplicateColumns=[...])
+- Example: `customSql: "SELECT MATNR, WERKS FROM MARA"`, `duplicateColumns: ["MATNR","WERKS"]`
+
 HUMAN-IN-THE-LOOP (RECOMMENDED DEFAULT):
 - This workflow is approval-gated. If the user does NOT provide explicit IDs/names for each choice, you MUST stop and ask.
 - Do NOT auto-pick defaults when multiple ACTIVE connections or multiple candidate tables/columns exist.
@@ -19,7 +24,7 @@ APPROVAL GATES (do these in order and WAIT after each):
 7) Create rule
    - create_duplicate_rule with the approved duplicateColumns
 8) Optional execution (separate approval)
-   - Only run execute_rule if user explicitly says to execute now.
+   - Only run execute_rules_or_workflows if user explicitly says to execute now.
 
 WORKFLOW:
 1. Identify table and candidate key columns
@@ -29,7 +34,7 @@ WORKFLOW:
    - Table mode: schemaName + tableName + duplicateColumns
    - SQL mode: customSql + duplicateColumns (for filtered subsets or joins)
 4. Create: create_duplicate_rule
-5. Execute: execute_rule > check results
+5. Execute: execute_rules_or_workflows > check results
 6. Review exceptions: get_checks_exception_report shows duplicate records with DUPLICATE_COUNT
 
 COLUMN SELECTION:

@@ -7,6 +7,19 @@ FILE CONNECTION DETECTION:
 - If the selected connection is any of these types → follow FILE CONNECTION FLOW below instead of the standard workflow.
 - NEVER call create_validation_rule directly for file connections — use fetch_file_sample_data first.
 
+SAP ECC VALIDATION RULES:
+- SAP connection: connectorId="sap-ecc"
+- ⚠️ **ALWAYS use customSql** for create_validation_rule (schemaName+tableName mode not supported)
+- **Rule creation pattern:**
+  1. list_connection_metadata(entity="table") → pick table
+  2. list_connection_metadata(entity="column") → show columns to user
+  3. Ask user: "Which columns to validate?" → user picks 8-12 columns max (512-byte limit)
+  4. fetch_db_sample_data(customSql="SELECT col1,col2,... FROM TableName", limit=100)
+  5. profile_data → suggest_quality_checks → present suggestions → WAIT for approval
+  6. create_validation_rule(customSql="SELECT col1,col2,... FROM TableName", checksJson=...)
+- Example: `customSql: "SELECT MANDT, MATNR, ERSDA, ERNAM FROM MARA"`
+- **Crawling:** Required before first use. If metadata fails: "Run crawling in iceDQ UI first"
+
 APPROVAL GATES (do these in order and WAIT after each):
 1) Workspace selection
    - list_workspaces → present options → user selects workspaceId
@@ -32,15 +45,16 @@ APPROVAL GATES (do these in order and WAIT after each):
 ---
 
 STANDARD WORKFLOW (DB connections):
-1. Identify target: Get connectionId (list_connections), then navigate database > schema > table (list_connection_metadata with entity="database" > "schema" > "table")
-2. Get column metadata: list_connection_metadata(entity="column") to understand datatypes, PKs, nullability
-3. Sample data: fetch_db_sample_data with databaseName="" for Azure SQL
-4. Profile: profile_data with the sample data array
-5. Get suggestions: suggest_quality_checks with the profile output
-6. Review: Present suggested checks to user before creating
-7. Create: Use create_validation_rule — combine ALL checks for the same table into ONE rule (avoid rule sprawl)
-8. Execute: execute_rules_or_workflows (objectIds: [ruleId]) > get_workflow_run_status_or_result (action=status) > get_workflow_run_status_or_result (action=result)
-9. Review exceptions: get_checks_exception_report for row-level failure details
+1. Navigate: list_connections → list_connection_metadata (database > schema > table)
+2. Show columns: list_connection_metadata(entity="column") → present columns to user
+3. Ask user: "Which columns do you want to validate?" → user selects columns
+4. Sample data: fetch_db_sample_data (use selected columns only, limit=100)
+5. Profile: profile_data with the sample data array
+6. Suggest: suggest_quality_checks with the profile output
+7. Approve: Present suggested checks → WAIT for user approval/modifications
+8. Create: create_validation_rule with approved checks (ONE rule for all checks)
+9. Execute (optional): execute_rules_or_workflows if user requests
+10. Review exceptions: get_checks_exception_report for failures
 
 ---
 

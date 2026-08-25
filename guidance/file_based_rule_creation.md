@@ -66,7 +66,7 @@ Case A: FILE (source) vs DATABASE (target)
   Step 3  fetch_file_sample_data(workspaceId, connectionId=<file>, ruleId=null, folderId,
                                  ruleType="Recon", connectionType="source", fileName)
             → returns: ruleId (draft), source columns
-  Step 4  list_schemas / list_tables / list_columns on DB connection → user picks target schema + table
+  Step 4  list_connection_metadata(entity="schema"/"table"/"column") on DB connection → user picks target schema + table
   Step 5  update_rule(workspaceId, ruleId,
                       targetConfig={ connectionId:<db>, databaseName, schemaName, tableName },
                       joinKeys=[...], checksToAdd=[...])
@@ -78,7 +78,7 @@ Case B: DATABASE (source) vs FILE (target)
   Step 3  fetch_file_sample_data(workspaceId, connectionId=<file>, ruleId=null, folderId,
                                  ruleType="Recon", connectionType="target", fileName)
             → returns: ruleId (draft), target columns
-  Step 4  list_schemas / list_tables / list_columns on DB connection → user picks source schema + table
+  Step 4  list_connection_metadata(entity="schema"/"table"/"column") on DB connection → user picks source schema + table
   Step 5  update_rule(workspaceId, ruleId,
                       sourceConfig={ connectionId:<db>, databaseName, schemaName, tableName },
                       joinKeys=[...], checksToAdd=[...])
