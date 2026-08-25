@@ -11,7 +11,7 @@
 |---|---|---|
 | 1.1 | `manifest_version` is `0.2` or higher | ✅ v0.3 |
 | 1.2 | `name` is present and unique | ✅ `icedq-mcp` |
-| 1.3 | `display_name` is present and user-facing | ✅ `iceDQ Data Quality Platform` |
+| 1.3 | `display_name` is present and user-facing | ✅ `iceDQ Data Reliability Platform` |
 | 1.4 | `version` follows semver (e.g. `1.0.2`) | ✅ `1.0.2` |
 | 1.5 | `description` is clear and accurate | ✅ |
 | 1.6 | `author` has `name`, `email`, and `url` | ✅ |
