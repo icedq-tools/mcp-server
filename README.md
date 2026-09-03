@@ -2,7 +2,7 @@
   <img src="https://cdn-ildhhnd.nitrocdn.com/lLTTsRqXojmKENiGvwrypcTvmrbIWtKJ/assets/images/source/rev-bd4cb96/icedq.com/wp-content/uploads/2025/01/icedq-logo.svg" alt="iceDQ Logo" width="80" />
 </p>
 
-<h1 align="center">iceDQ MCP Server v2.0.0 Beta</h1>
+<h1 align="center">iceDQ MCP Server v2.0.1 Beta</h1>
 
 <p align="center">
   <strong>Connect your AI assistant to iceDQ Data Quality Platform</strong>
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.0--beta-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-2.0.1--beta-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/status-beta-orange.svg" alt="Status" />
   <img src="https://img.shields.io/badge/license-Apache_2.0-green.svg" alt="License" />
   <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg" alt="Node" />

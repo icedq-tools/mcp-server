@@ -4,7 +4,7 @@ All notable changes to the iceDQ MCP Server project are documented in this file.
 
 ---
 
-## [2.0.0-beta]
+## [2.0.1-beta]
 
 ### Added
 - **API connectors** — fetch sample data from REST APIs (`fetch_api_sample_data`)
