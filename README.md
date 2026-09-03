@@ -51,6 +51,7 @@ execute, monitor, and analyze results, all through conversation.
 | **Custom Functions**       | Create and manage reusable Java/Groovy functions for use across validation checks                |
 | **Workflows**              | Chain multiple rules into sequential execution workflows                                         |
 | **Schedules**              | Automate rule execution with one-time, daily, or weekly schedules                                |
+| **Data Warehouse Queries** | Run structured, schema-validated queries against iceDQ's execution history datasets              |
 | **Execution & Monitoring** | Run rules on demand, track status, and view exception reports                                    |
 | **Organization**           | Manage folders, move rules in batch, create reusable parameters                                  |
 
@@ -321,26 +322,23 @@ the [Authentication Guide](https://docs.icedq.com/guides/mcp-server/icedq-mcp-au
 
 ## Complete Tool Reference
 
-### Discovery & Exploration (14 tools)
+### Discovery & Exploration (12 tools)
+| Tool                     | Description                                                              |
+|--------------------------|---------------------------------------------------------------------------|
+| List Workspaces          | List all workspaces in your iceDQ instance                              |
+| List Connections         | List data source connections in a workspace                             |
+| Test Connection          | Test connectivity for a data source connection                          |
+| List Folders             | List folders for organizing rules, workflows, schedules, and parameters |
+| List Rules               | Search and filter rules by folder, name, state, or type                 |
+| List Workflows           | List all workflows in a workspace                                       |
+| List Schedules           | List all schedules in a workspace                                       |
+| List Files             | List files available in a flat-file connection (Azure Blob, S3, local)    |
+| Get Database Metadata    | Get connection details and database capabilities                        |
+| List Connection Metadata | Navigate databases, schemas, tables, or columns for a connection        |
+| Get Rule                 | Get full rule configuration, checks, and metadata                       |
+| Get Guidance             | Get step-by-step workflow guidance before starting a multi-step task    |
 
-| Tool                  | Description                                                          |
-|-----------------------|-----------------------------------------------------------------------|
-| List Workspaces       | List all workspaces in your iceDQ instance                          |
-| List Connections      | List data source connections in a workspace                         |
-| Test Connection       | Test connectivity for a data source connection                      |
-| List Folders          | List folders for organizing rules                                   |
-| List Rules            | Search and filter rules by name, state, or type                     |
-| List Workflows        | List all workflows in a workspace                                   |
-| List Schedules        | List all schedules in a workspace                                   |
-| List Databases        | List databases for a connection                                     |
-| List Schemas          | List schemas in a database                                          |
-| List Tables           | List tables in a schema                                             |
-| List Columns          | List columns and metadata for a table                               |
-| List Files            | List files available in a flat-file connection (CSV, Excel, blob/S3) |
-| Get Database Metadata | Get connection details and capabilities                             |
-| Get Rule              | Get full rule configuration and checks                               |
-
-### Data Analysis (5 tools)
+### Data Analysis & Profiling (5 tools)
 
 | Tool                    | Description                                                                          |
 |-------------------------|---------------------------------------------------------------------------------------|

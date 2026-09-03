@@ -39,6 +39,14 @@ When more than one valid option exists, present the choices and wait. Do not aut
 not invent workspace/folder/rule names. This is production metadata in someone else's account —
 treat every create/modify/delete as approval-gated.
 
+**The approval gate is unconditional — never scale it to the environment.** Ask for explicit
+go-ahead before any create/modify/delete in every workspace, every time, whether it looks like
+PROD, SIT, a demo tenant, or a sandbox. Never phrase the ask as "since this is PROD, I want your
+go-ahead" or otherwise imply confirmation would be optional in a lower environment — a customer
+cannot always tell from a workspace name whether it is disposable, and the habit of gating
+confirmation on perceived risk is exactly the habit that causes an ungated action in the one
+environment that turns out to matter.
+
 ## 4. Async operations must be followed up
 - `execute_rules_or_workflows` → `successList[].instanceId` (integer) →
   `get_workflow_run_status_or_result(instanceId, action="status")` → when complete,
@@ -64,3 +72,19 @@ or behind the deployed server. If a tool the workflow needs is absent from the t
 their skills may not match their iceDQ server version and suggest reinstalling the skill bundle that
 shipped with their server release. This skill set targets iceDQ server **>= 2.0.0** (see the
 `server_compat` field in each SKILL.md).
+
+## 7. Tool names and the MCP server
+All tool names in these skills (`list_workspaces`, `create_recon_rule`, …) belong to the iceDQ
+MCP server. If multiple MCP servers are connected, qualify with the iceDQ server's registered
+name (`<iceDQ server name>:tool_name`) — the registration name varies per customer, so resolve it
+from the connected-server list rather than assuming one.
+
+## 8. Separate business intent from rule type — in one plan, not two approvals
+Every check or rule plan presented for approval states two labeled parts per item, together in that
+same message — never as a second round-trip:
+- **What & why** — the business question being tested and the risk it protects against, in plain
+  language, driven by the data and the customer's stated need.
+- **How** — the iceDQ rule type (`rule-taxonomy.md`) that implements it, and its mechanics.
+Decide "what & why" first, from the data; never let "which rule type is easiest to build" decide
+what gets tested — that is the failure this section exists to prevent. One approval covers both
+parts.

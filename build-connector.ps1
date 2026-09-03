@@ -63,7 +63,7 @@ Write-Step 2 5 "Resolving version..."
 
 $rootPkg = Get-Content "package.json" -Raw | ConvertFrom-Json
 if (-not $Version) { $Version = $rootPkg.version }
-$cleanVersion = $Version -replace '-SNAPSHOT', '' -replace '-[a-zA-Z].*$', ''
+$cleanVersion = $Version -replace '-SNAPSHOT', ''
 Write-Ok "v$cleanVersion (from $Version)"
 
 # --- Step 3: Patch manifest.json version -----------------------------------
