@@ -40731,7 +40731,7 @@ var TOOLS = [
   },
   {
     name: "check_task_status",
-    description: "Check status of an async task (rule moves, workflow moves). Returns: status (Completed/Running/Failed/Pending), duration, affected entities, activity log. CRITICAL: Always call after move_rules or move_workflows. Wait 2-3 seconds before first check.",
+    description: "Check status of an async task (rule moves, workflow moves). Returns: status (Completed/Running/Failed/Pending), duration, affected entities, activity log. CRITICAL: Always call after move_rules_or_workflows. Wait 2-3 seconds before first check.",
     inputSchema: {
       type: "object",
       properties: {
@@ -40984,7 +40984,7 @@ var TOOLS = [
   },
   {
     name: "create_duplicate_rule",
-    description: "Create a duplicate detection rule to identify duplicate records. Checks for duplicate values in one or more columns. Use for: business key uniqueness, non-enforcing platforms (Snowflake/BigQuery/Redshift where PKs are not enforced), ETL deduplication, data lake validation. Supports Table mode (schema+table+columns) or Custom SQL mode (customSql+columns). Rule is Published immediately. Execute with execute_rule, then use get_checks_exception_report for results. Use update_rule to modify checks after creation.",
+    description: "Create a duplicate detection rule to identify duplicate records. Checks for duplicate values in one or more columns. Use for: business key uniqueness, non-enforcing platforms (Snowflake/BigQuery/Redshift where PKs are not enforced), ETL deduplication, data lake validation. Supports Table mode (schema+table+columns) or Custom SQL mode (customSql+columns). Rule is Published immediately. Execute with execute_rules_or_workflows, then use get_checks_exception_report for results. Use update_rule to modify checks after creation.",
     inputSchema: {
       type: "object",
       properties: {
@@ -42319,7 +42319,7 @@ var TOOLS = [
   },
   {
     name: "create_pushdown_rule",
-    description: "Create a SQL-driven pushdown rule for aggregate and batch validation. Execute custom SQL where rows returned = failures (0 rows = success). Use for: duplicate detection (GROUP BY/HAVING), referential integrity (LEFT JOIN/WHERE NULL), SCD2 validation, cross-table checks, aggregate thresholds. Rule is Published immediately. Exit code = number of failure rows. Execute with execute_rule.",
+    description: "Create a SQL-driven pushdown rule for aggregate and batch validation. Execute custom SQL where rows returned = failures (0 rows = success). Use for: duplicate detection (GROUP BY/HAVING), referential integrity (LEFT JOIN/WHERE NULL), SCD2 validation, cross-table checks, aggregate thresholds. Rule is Published immediately. Exit code = number of failure rows. Execute with execute_rules_or_workflows.",
     inputSchema: {
       type: "object",
       properties: {
@@ -42683,7 +42683,7 @@ var TOOLS = [
   },
   {
     name: "get_rule_workflow_run_history",
-    description: "Retrieve the execution history of a rule or workflow in iceDQ. This tool returns the list of past workflow runs triggered for a specific rule or workflow object. **SUPPORTED OBJECTS**: (1) Validation rules (rule-xxx) - View history of data quality validation executions. (2) Duplicate rules (rule-xxx) - View duplicate detection run history. (3) Reconciliation rules (rule-xxx) - View dataset comparison runs. (4) Workflows (wkfl-xxx) - View multi-step workflow execution history. **PAGINATION**: Results are paginated. Use pageNo and pageSize to navigate through historical runs. **OUTPUT**: Each item includes workflowInstanceId (same id returned by execute_rule for status/result polling), objectInstanceId (activity-level instance for detailed result/exception flows), startedTimestamp, finishedTimestamp, status, exitCode, error, and instanceSummary. Response also includes runCountThisPage and totalRunsMatchingFilter when the API provides totalElements on pageable. Multi-step workflows may return multiple rows per workflowInstanceId (one per activity). **PAGINATION BEHAVIOR**: Always default to pageNo=1 and pageSize=20 when not specified. After returning results, always ask the user: 'Would you like me to fetch the next page?'",
+    description: "Retrieve the execution history of a rule or workflow in iceDQ. This tool returns the list of past workflow runs triggered for a specific rule or workflow object. **SUPPORTED OBJECTS**: (1) Validation rules (rule-xxx) - View history of data quality validation executions. (2) Duplicate rules (rule-xxx) - View duplicate detection run history. (3) Reconciliation rules (rule-xxx) - View dataset comparison runs. (4) Workflows (wkfl-xxx) - View multi-step workflow execution history. **PAGINATION**: Results are paginated. Use pageNo and pageSize to navigate through historical runs. **OUTPUT**: Each item includes workflowInstanceId (same id returned by execute_rules_or_workflows for status/result polling), objectInstanceId (activity-level instance for detailed result/exception flows), startedTimestamp, finishedTimestamp, status, exitCode, error, and instanceSummary. Response also includes runCountThisPage and totalRunsMatchingFilter when the API provides totalElements on pageable. Multi-step workflows may return multiple rows per workflowInstanceId (one per activity). **PAGINATION BEHAVIOR**: Always default to pageNo=1 and pageSize=20 when not specified. After returning results, always ask the user: 'Would you like me to fetch the next page?'",
     inputSchema: {
       type: "object",
       properties: {
@@ -42721,7 +42721,7 @@ var TOOLS = [
   },
   {
     name: "get_workflow_run_status_or_result",
-    description: "Check the current execution status of a workflow run in iceDQ using its execution instance ID. This tool monitors the progress of executions triggered through execute_rule. **EXECUTION SOURCE**: The instanceId may originate from executing either a rule (rule-xxx) or a workflow (wkfl-xxx). When a rule is executed, iceDQ internally triggers its associated workflow, creating a workflow run instance. When a workflow is executed directly, it also creates a workflow run instance. **INSTANCE ID**: instanceId is the unique execution identifier (absolute integer) for that specific workflow run. **STATUS MONITORING**: Use this tool to check progress of asynchronous executions. Possible statuses include 'Running', 'Success', 'Warning', or 'Pending'. **WORKFLOW**: (1) Execute a rule or workflow using execute_rule. (2) Capture the returned instanceId. (3) Use this tool to monitor the execution status until completion.",
+    description: "Check the current execution status of a workflow run in iceDQ using its execution instance ID. This tool monitors the progress of executions triggered through execute_rules_or_workflows. **EXECUTION SOURCE**: The instanceId may originate from executing either a rule (rule-xxx) or a workflow (wkfl-xxx). When a rule is executed, iceDQ internally triggers its associated workflow, creating a workflow run instance. When a workflow is executed directly, it also creates a workflow run instance. **INSTANCE ID**: instanceId is the unique execution identifier (absolute integer) for that specific workflow run. **STATUS MONITORING**: Use this tool to check progress of asynchronous executions. Possible statuses include 'Running', 'Success', 'Warning', 'Failed', or 'Pending'. **WORKFLOW**: (1) Execute a rule or workflow using execute_rules_or_workflows. (2) Capture the returned instanceId. (3) Use this tool to monitor the execution status until completion.",
     inputSchema: {
       type: "object",
       properties: {
@@ -42792,7 +42792,7 @@ var TOOLS = [
   },
   {
     name: "get_checks_exception_report",
-    description: "Retrieve the exception report for a specific rule execution instance. Returns both the checks configuration and the exception records that failed those checks. **RETURNED DATA**: (1) checks - Array of all checks configured in the rule, including check name, type (NotNull/ValidValues/Length/Format/etc.), column being validated, expressions/patterns, and instance statistics (successCount, failureCount, errorCount). (2) exceptions - Object containing pageable metadata (pageNo, pageSize, pages, size) and data array with actual exception records showing which checks failed for each row. Each exception record includes the source column values and boolean flags for each check (true=passed, false=failed). **USE CASES**: (1) Review data quality violations after rule execution. (2) Analyze which specific checks are failing most frequently. (3) Identify patterns in failed records for root cause analysis. (4) Monitor data quality trends by tracking failure counts across executions. **PAGINATION**: Exception data is paginated - use pageNo and pageSize to navigate through large result sets. **WORKFLOW**: (1) Execute a rule using execute_rule. (2) Use check_workflow_run_status to confirm execution completed. (3) Call get_checks_exception_report with the instanceId to retrieve violations. (4) Analyze checks array to understand the rule. (5) Review exceptions.data to see failed records. **IMPORTANT**: Only available after rule execution completes. Supported for Validation, Duplicate, and Recon rule types. **PAGINATION BEHAVIOR**: Always default to pageNo=1 and pageSize=100 when not specified. After returning results, always ask the user: 'Would you like me to fetch the next page?' **EXCEPTION REPORT FLOW**: When a user asks for an exception report, ALWAYS first ask: 'Would you like me to show the exception report here in the chat, or shall I share the download URL where you can view the full detailed exception report of each check in the iceDQ UI?' \u2014 If the user wants to see it here, call this tool. If the user wants the download URL, call get_exception_report_url instead.",
+    description: "Retrieve the exception report for a specific rule execution instance. Returns both the checks configuration and the exception records that failed those checks. **RETURNED DATA**: (1) checks - Array of all checks configured in the rule, including check name, type (NotNull/ValidValues/Length/Format/etc.), column being validated, expressions/patterns, and instance statistics (successCount, failureCount, errorCount). (2) exceptions - Object containing pageable metadata (pageNo, pageSize, pages, size) and data array with actual exception records showing which checks failed for each row. Each exception record includes the source column values and boolean flags for each check (true=passed, false=failed). **USE CASES**: (1) Review data quality violations after rule execution. (2) Analyze which specific checks are failing most frequently. (3) Identify patterns in failed records for root cause analysis. (4) Monitor data quality trends by tracking failure counts across executions. **PAGINATION**: Exception data is paginated - use pageNo and pageSize to navigate through large result sets. **WORKFLOW**: (1) Execute a rule using execute_rules_or_workflows. (2) Use get_workflow_run_status_or_result (action='status') to confirm execution completed. (3) Call get_checks_exception_report with the instanceId to retrieve violations. (4) Analyze checks array to understand the rule. (5) Review exceptions.data to see failed records. **IMPORTANT**: Only available after rule execution completes. Supported for Validation, Duplicate, and Recon rule types. **PAGINATION BEHAVIOR**: Always default to pageNo=1 and pageSize=100 when not specified. After returning results, always ask the user: 'Would you like me to fetch the next page?' **EXCEPTION REPORT FLOW**: When a user asks for an exception report, ALWAYS first ask: 'Would you like me to show the exception report here in the chat, or shall I share the download URL where you can view the full detailed exception report of each check in the iceDQ UI?' \u2014 If the user wants to see it here, call this tool. If the user wants the download URL, call get_exception_report_url instead.",
     inputSchema: {
       type: "object",
       properties: {
@@ -47089,7 +47089,7 @@ If you need to compare multiple values, create separate checksum rules for each 
         criticality,
         createdBy: response.createdBy,
         createdAt: response.createdTimestamp,
-        message: `\u2705 Recon rule created successfully. Join key(s): ${joinKeys.map((jk) => `${jk.sourceColumn} \u2194 ${jk.targetColumn}`).join(", ")}. ${checks.length} column check(s). Result types: ${effectiveResultTypes.join(", ")}. Execute with execute_rule to find discrepancies.`
+        message: `\u2705 Recon rule created successfully. Join key(s): ${joinKeys.map((jk) => `${jk.sourceColumn} \u2194 ${jk.targetColumn}`).join(", ")}. ${checks.length} column check(s). Result types: ${effectiveResultTypes.join(", ")}. Execute with execute_rules_or_workflows to find discrepancies.`
       };
     } catch (error2) {
       if (error2.message.includes("409") || error2.message.includes("ResourceConflict")) {
@@ -55323,37 +55323,37 @@ var GUIDANCE_DIR = [GUIDANCE_DIR_BUNDLED, GUIDANCE_DIR_SOURCE, GUIDANCE_DIR_ROOT
 var TOPIC_METADATA = {
   create_validation_rules: {
     title: "Creating Validation Rules in iceDQ",
-    relatedTools: ["create_validation_rule", "fetch_db_sample_data", "profile_data", "suggest_quality_checks", "execute_rule"],
+    relatedTools: ["create_validation_rule", "fetch_db_sample_data", "profile_data", "suggest_quality_checks", "execute_rules_or_workflows"],
     relatedTopics: ["groovy_expressions", "data_profiling_workflow", "async_monitoring"]
   },
   create_api_validation_rules: {
     title: "Creating API Validation Rules in iceDQ",
-    relatedTools: ["update_rule", "profile_data", "suggest_quality_checks", "execute_rule"],
+    relatedTools: ["update_rule", "profile_data", "suggest_quality_checks", "execute_rules_or_workflows"],
     relatedTopics: ["create_validation_rules", "groovy_expressions", "data_profiling_workflow", "async_monitoring"]
   },
   create_api_recon_rules: {
     title: "Creating API Reconciliation Rules in iceDQ",
-    relatedTools: ["fetch_api_sample_data", "analyze_recon_mapping", "update_rule", "execute_rule", "get_checks_exception_report"],
+    relatedTools: ["fetch_api_sample_data", "analyze_recon_mapping", "update_rule", "execute_rules_or_workflows", "get_checks_exception_report"],
     relatedTopics: ["create_recon_rules", "groovy_expressions", "async_monitoring", "exception_report_analysis"]
   },
   create_recon_rules: {
     title: "Creating Reconciliation Rules in iceDQ",
-    relatedTools: ["create_recon_rule", "analyze_recon_mapping", "execute_rule", "get_checks_exception_report"],
+    relatedTools: ["create_recon_rule", "analyze_recon_mapping", "execute_rules_or_workflows", "get_checks_exception_report"],
     relatedTopics: ["groovy_expressions", "async_monitoring", "exception_report_analysis"]
   },
   create_checksum_rules: {
     title: "Creating Checksum Rules in iceDQ",
-    relatedTools: ["create_checksum_rule", "execute_rule", "get_workflow_run_status_or_result"],
+    relatedTools: ["create_checksum_rule", "execute_rules_or_workflows", "get_workflow_run_status_or_result"],
     relatedTopics: ["async_monitoring"]
   },
   create_duplicate_rules: {
     title: "Creating Duplicate Detection Rules in iceDQ",
-    relatedTools: ["create_duplicate_rule", "execute_rule", "get_checks_exception_report"],
+    relatedTools: ["create_duplicate_rule", "execute_rules_or_workflows", "get_checks_exception_report"],
     relatedTopics: ["async_monitoring", "exception_report_analysis"]
   },
   create_pushdown_rules: {
     title: "Creating Pushdown Rules in iceDQ",
-    relatedTools: ["create_pushdown_rule", "execute_rule", "get_workflow_run_status_or_result"],
+    relatedTools: ["create_pushdown_rule", "execute_rules_or_workflows", "get_workflow_run_status_or_result"],
     relatedTopics: ["async_monitoring"]
   },
   groovy_expressions: {
@@ -55363,7 +55363,7 @@ var TOPIC_METADATA = {
   },
   async_monitoring: {
     title: "Async Operations and Execution Monitoring",
-    relatedTools: ["execute_rule", "get_workflow_run_status_or_result", "check_task_status", "get_checks_exception_report"],
+    relatedTools: ["execute_rules_or_workflows", "get_workflow_run_status_or_result", "check_task_status", "get_checks_exception_report"],
     relatedTopics: ["exception_report_analysis"]
   },
   scheduling_pipelines: {
@@ -55378,12 +55378,12 @@ var TOPIC_METADATA = {
   },
   data_profiling_workflow: {
     title: "Data Profiling and Quality Analysis Workflow",
-    relatedTools: ["fetch_db_sample_data", "profile_data", "suggest_quality_checks", "list_databases", "list_schemas", "list_tables", "list_columns"],
+    relatedTools: ["fetch_db_sample_data", "profile_data", "suggest_quality_checks", "list_connection_metadata"],
     relatedTopics: ["create_validation_rules"]
   },
   exception_report_analysis: {
     title: "Analyzing Exception Reports and Rule Results",
-    relatedTools: ["get_checks_exception_report", "get_workflow_run_status_or_result", "get_rule_workflow_run_history", "execute_rule"],
+    relatedTools: ["get_checks_exception_report", "get_workflow_run_status_or_result", "get_rule_workflow_run_history", "execute_rules_or_workflows"],
     relatedTopics: ["async_monitoring"]
   },
   datawarehouse_queries: {

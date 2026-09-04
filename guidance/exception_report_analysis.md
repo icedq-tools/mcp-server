@@ -16,7 +16,7 @@ RETRIEVING EXCEPTION REPORTS:
 EXPORT EXCEPTION REPORT TOOL (get_exception_report_url):
 - Returns a iceDQ UI URL to view the exception report — it does NOT download a file
 - For rules: requires objectId (ruleId from get_rule), instanceId, ruleType, entityType="rule"
-- For workflows: requires objectId (workflowId from get_workflow), instanceId, workflowName, entityType="workflow"
+- For workflows: requires objectId (workflowId from list_workflows), instanceId, workflowName, entityType="workflow"
 - ruleType must be sent for rule exception reports (recon, validation, pushdown, checksum, duplicate)
 
 READING THE INLINE REPORT (get_checks_exception_report):
