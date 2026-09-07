@@ -8,7 +8,7 @@
     "url": "https://icedq.com"
   },
   "homepage": "https://docs.icedq.com/guides/mcp-server/intro",
-  "repository": "https://github.com/icedq/icedq-mcp",
+  "repository": "https://github.com/icedq-tools/mcp-server",
   "license": "Apache-2.0",
   "keywords": [
     "icedq",
