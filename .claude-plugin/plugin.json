@@ -1,5 +1,5 @@
 {
-  "name": "iceDQ MCP",
+  "name": "icedq-mcp",
   "version": "2.0.2-beta",
   "description": "iceDQ data quality operations for Claude: author Validation/Duplicate/Pushdown/Recon/Checksum rules, run rules and workflows and read exception reports, and build schedules — bundled with the iceDQ MCP server so tools and guided skills install together.",
   "author": {

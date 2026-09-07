@@ -1,5 +1,5 @@
 {
-  "name": "iceDQ Marketplace",
+  "name": "icedq-marketplace",
   "version": "2.0.2-beta",
   "description": "Official iceDQ plugins for Claude — data quality authoring, execution, and scheduling backed by the iceDQ MCP server.",
   "owner": {
@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "plugins": [
     {
-      "name": "iceDQ MCP",
+      "name": "icedq-mcp",
       "source": ".",
       "description": "Author, run, and schedule iceDQ data quality rules, bundled with the iceDQ MCP server.",
       "keywords": ["icedq", "data-quality", "data-validation", "data-reconciliation"],
