@@ -1,8 +1,12 @@
 name: Release
 
-# Publishes @icedq/mcp-server to npm when a GitHub Release is published,
-# or on-demand via manual dispatch.
-# Authentication is handled via npm Trusted Publishing (OIDC) — no NPM_TOKEN.
+# Publishes @icedq/mcp-server to npm, then registers/updates the listing in
+# the official MCP Registry (registry.modelcontextprotocol.io), when a GitHub
+# Release is published, or on-demand via manual dispatch.
+# npm auth is handled via npm Trusted Publishing (OIDC) — no NPM_TOKEN.
+# MCP Registry auth is handled via GitHub OIDC — no extra secret needed,
+# since the server name (io.github.icedq-tools/mcp-server) is namespaced to
+# this GitHub org/repo.
 # The `release` environment gates every publish behind required reviewers.
 #
 # This repository is public, so npm provenance is enabled below — each publish
@@ -14,6 +18,10 @@ name: Release
 #      org icedq-tools, repo mcp-server, workflow release.yml, environment release.
 #   2. Create the `release` GitHub Environment with required reviewers.
 #   3. Set npm publishing access to "require 2FA and disallow tokens".
+#
+# server.json's "version" must be bumped in lockstep with package.json's
+# "version" before tagging a release — the MCP Registry publish step below
+# fails fast if they've drifted apart.
 
 on:
   release:
@@ -68,3 +76,50 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: 'true' # public repo — enables npm provenance attestation
           NPM_TAG: ${{ github.event_name == 'release' && (github.event.release.prerelease && 'beta' || 'latest') || (github.event.inputs.tag || 'latest') }}
+
+  publish-mcp-registry:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # OIDC token for MCP Registry github-oidc auth
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify server.json version matches package.json
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          SERVER_VERSION=$(node -p "require('./server.json').version")
+          if [ "$PKG_VERSION" != "$SERVER_VERSION" ]; then
+            echo "::error::server.json version ($SERVER_VERSION) does not match package.json version ($PKG_VERSION)."
+            exit 1
+          fi
+          for pkg_entry in $(node -p "require('./server.json').packages.map(p => p.version).join(' ')"); do
+            if [ "$pkg_entry" != "$PKG_VERSION" ]; then
+              echo "::error::server.json packages[].version ($pkg_entry) does not match package.json version ($PKG_VERSION)."
+              exit 1
+            fi
+          done
+      - name: Check for a stable (non-prerelease) version
+        # The MCP Registry listing should only ever reflect official releases.
+        # Anything with a prerelease suffix (-beta, -pre, -rc, -testing, ...)
+        # still publishes to npm under the beta dist-tag, but is skipped here.
+        id: version_check
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [[ "$PKG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping MCP Registry publish — $PKG_VERSION is a prerelease version."
+          fi
+      - name: Install mcp-publisher
+        if: steps.version_check.outputs.is_stable == 'true'
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Login to MCP Registry via GitHub OIDC
+        if: steps.version_check.outputs.is_stable == 'true'
+        run: ./mcp-publisher login github-oidc
+      - name: Publish to MCP Registry
+        if: steps.version_check.outputs.is_stable == 'true'
+        run: ./mcp-publisher publish
