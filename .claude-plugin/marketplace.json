@@ -13,7 +13,7 @@
   "plugins": [
     {
       "name": "icedq-mcp",
-      "source": ".",
+      "source": "./",
       "description": "Author, run, and schedule iceDQ data quality rules, bundled with the iceDQ MCP server.",
       "keywords": ["icedq", "data-quality", "data-validation", "data-reconciliation"],
       "category": "data"
