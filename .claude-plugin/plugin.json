@@ -1,0 +1,44 @@
+{
+  "name": "icedq-mcp",
+  "version": "2.0.2-beta",
+  "description": "iceDQ data quality operations for Claude: author Validation/Duplicate/Pushdown/Recon/Checksum rules, run rules and workflows and read exception reports, and build schedules — bundled with the iceDQ MCP server so tools and guided skills install together.",
+  "author": {
+    "name": "iceDQ Integration Team",
+    "email": "getsupport@icedq.com",
+    "url": "https://icedq.com"
+  },
+  "homepage": "https://docs.icedq.com/guides/mcp-server/intro",
+  "repository": "https://github.com/icedq-tools/mcp-server",
+  "license": "Apache-2.0",
+  "keywords": [
+    "icedq",
+    "data-quality",
+    "data-testing",
+    "etl-testing",
+    "data-validation",
+    "data-reconciliation",
+    "data-observability"
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "icedq": {
+      "command": "npx",
+      "args": ["-y", "@icedq/mcp-server"],
+      "env": {
+        "ICEDQ_BASE_URL": "${ICEDQ_BASE_URL}",
+        "ICEDQ_REALM": "${ICEDQ_REALM}",
+        "ICEDQ_CLIENT_ID": "${ICEDQ_CLIENT_ID}",
+        "AUTH_TYPE": "${AUTH_TYPE}",
+        "ICEDQ_CLIENT_SECRET": "${ICEDQ_CLIENT_SECRET}",
+        "ICEDQ_USERNAME": "${ICEDQ_USERNAME}",
+        "ICEDQ_PASSWORD": "${ICEDQ_PASSWORD}",
+        "TOKENS_PATH": "${TOKENS_PATH}",
+        "ICEDQ_ORG_ID": "${ICEDQ_ORG_ID}",
+        "REQUEST_TIMEOUT": "${ICEDQ_REQUEST_TIMEOUT}",
+        "VERIFY_SSL": "${ICEDQ_VERIFY_SSL}",
+        "DEBUG": "${ICEDQ_DEBUG}",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
