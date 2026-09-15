@@ -1,8 +1,11 @@
 name: Release
 
-# Publishes @icedq/mcp-server to npm when a GitHub Release is published,
-# or on-demand via manual dispatch.
-# Authentication is handled via npm Trusted Publishing (OIDC) — no NPM_TOKEN.
+# Publishes @icedq/mcp-server to npm, then publishes server.json to the
+# official MCP Registry (registry.modelcontextprotocol.io), when a GitHub
+# Release is published, or on-demand via manual dispatch.
+# npm auth is handled via npm Trusted Publishing (OIDC) — no NPM_TOKEN.
+# MCP Registry auth is handled via GitHub OIDC — no extra secret, since
+# server.json's name (io.github.icedq-tools/mcp-server) matches this org.
 # The `release` environment gates every publish behind required reviewers.
 #
 # This repository is public, so npm provenance is enabled below — each publish
@@ -68,3 +71,20 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: 'true' # public repo — enables npm provenance attestation
           NPM_TAG: ${{ github.event_name == 'release' && (github.event.release.prerelease && 'beta' || 'latest') || (github.event.inputs.tag || 'latest') }}
+
+      # --- MCP Registry (registry.modelcontextprotocol.io) ---
+      # server.json's name "io.github.icedq-tools/mcp-server" matches this repo's
+      # GitHub org, so GitHub OIDC auth is used — no extra secret required, it
+      # reuses the same id-token permission granted above for npm provenance.
+      - name: Sync server.json version with package.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.json.tmp
+          mv server.json.tmp server.json
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish

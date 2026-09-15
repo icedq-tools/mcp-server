@@ -8,11 +8,13 @@
 
 ## Pipeline build order
 1. Rules already exist (created via the authoring skill).
-2. Organize into a folder: `create_folder` → `move_rules_or_workflows(type='rule')` (async →
+2. Check for an existing schedule first: `list_schedules` (paged, no name filter) — reuse as-is,
+   extend via `add_rules_workflows_to_schedule`, or create new (SKILL.md Step 2).
+3. Organize into a folder: `create_folder` → `move_rules_or_workflows(type='rule')` (async →
    `check_task_status`).
-3. Group into a workflow: `create_workflow` (template `Sequential`).
-4. Schedule it: `create_schedule`.
-5. Add more later: `add_rules_workflows_to_schedule`; change timing/scope: `modify_schedule`.
+4. Group into a workflow: `create_workflow` (template `Sequential`).
+5. Schedule it: `create_schedule`.
+6. Add more later: `add_rules_workflows_to_schedule`; change timing/scope: `modify_schedule`.
 
 ## Schedule templates
 - **Onetime** — a single execution at a specified date/time.

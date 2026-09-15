@@ -1,6 +1,6 @@
 ---
 name: icedq-run-and-report
-description: Runs existing iceDQ rules, workflows, or schedules through the iceDQ MCP server, waits for them to finish, and reports the results — including exception (failure) details — in plain language. Use whenever a customer wants to EXECUTE checks or SEE results, e.g. "run my customer validation rule", "run the daily data quality workflow", "did last night's checks pass?", "what's failing in the orders recon?", "show me the exception report", "how many rows failed?", "give me the results of the checksum rule", or "kick off the reconciliation and tell me what breaks". Handles execution monitoring (polling to completion) and exception-report retrieval, and summarizes pass/fail in business terms. Do NOT use this to CREATE new rules (use the authoring skill) or to set up recurring schedules (use the schedule-and-monitor skill); use this for running things that already exist and interpreting their output.
+description: Runs existing iceDQ rules, workflows, or schedules through the iceDQ MCP server, waits for them to finish, and reports the results — including exception (failure) details — in plain language. Use whenever a customer wants to EXECUTE checks or SEE results, e.g. "run my customer validation rule", "run the daily data quality workflow", "did last night's checks pass?", "what's failing in the orders recon?", "show me the exception report", "how many rows failed?", "give me the results of the checksum rule", or "kick off the reconciliation and tell me what breaks". Handles execution monitoring (polling to completion) and exception-report retrieval, and summarizes pass/fail in business terms. Do NOT use this to CREATE new rules (ad-hoc checks → icedq-author-rules; a migration-test or reconciliation plan → icedq-compare-datasets), to set up schedules, or to review a schedule's cadence/health across many runs (icedq-schedule-and-monitor); use this for one specific rule/workflow/schedule's own most-recent execution.
 server_compat: ">=2.0.0"
 ---
 
@@ -21,8 +21,10 @@ status and exception reports.
    `list_*` tool in *this* environment. See `references/conventions.md`.
 3. **Always follow up async work.** Execution is asynchronous — you must poll to completion and
    only then report results. Never report a result you haven't confirmed is complete.
-4. **Ask before exception reports.** How the customer wants failures delivered, and which run
-   instance, are their choices — see the mandatory questions below.
+4. **Default to link + stats; confirm before raw rows.** After a run, always show the check-level
+   stats and the exception-report URL — that's usually enough. Only pull row-level exception data
+   into chat if the customer explicitly asks, and default to a small page size when you do (see
+   `references/conventions.md` §9).
 
 ## Workflow
 
@@ -32,7 +34,10 @@ Confirm the target with the customer and resolve its ID:
 - Workflow → `list_workflows(workspaceId)` → `workflowId`.
 - Schedule → `list_schedules(workspaceId)` → `scheduleId`.
 If several match the customer's description, present them and let the customer choose. Resolve
-`workspaceId` via `list_workspaces` first if not already known.
+`workspaceId` via `list_workspaces` first if not already known. If the customer is actually asking
+to review a schedule's health/cadence across many runs ("has this been firing on time," "which of
+my scheduled rules keep failing") rather than one specific execution, hand off to
+`icedq-schedule-and-monitor` instead.
 
 ### Step 2 — Execute
 Confirm the customer wants to run it now before you execute — a run is irreversible and can be
@@ -52,22 +57,21 @@ When complete, `get_workflow_run_status_or_result(instanceId, action="result")` 
 and counts. Summarize in plain language first: what ran, whether it passed, and how many rows or
 checks failed.
 
-### Step 5 — Exception detail (only when the customer wants it)
-Before pulling any exception report, **ask two things** (per `exception_report_analysis`):
+### Step 5 — Exception detail (default to link + stats; raw rows only on request)
+Per `references/conventions.md` §9: as part of Step 4's summary, always include the exception
+report link and the check-level stats already returned by `get_workflow_run_status_or_result`
+(action="result") — `successCount`/`failureCount`/`errorCount` per check. Get the link via
+`get_exception_report_url` (needs objectId, instanceId, ruleType, entityType — entityType="rule" or
+"workflow"). If more than one completed instance exists, list them with date + status and let the
+customer pick — do **not** auto-select the latest; find instances via
+`get_rule_workflow_run_history` for a rule, or the workflow run result for a workflow.
 
-1. **Delivery:** "Would you like the exception details here in the chat, or a link to view the
-   full report in the iceDQ UI?"
-   - In chat → `get_checks_exception_report`
-   - Link → `get_exception_report_url` (needs objectId, instanceId, ruleType, entityType)
-2. **Which run:** if more than one completed instance exists, list them with date + status and let
-   the customer pick — do **not** auto-select the latest. Find the instances via
-   `get_rule_workflow_run_history` for a **rule**, or the workflow run result
-   (`get_workflow_run_status_or_result`) for a **workflow**. Then pull the report with
-   `get_checks_exception_report` or `get_exception_report_url(entityType="rule")` for a rule, and
-   `get_exception_report_url(entityType="workflow")` for a workflow.
+Only call `get_checks_exception_report` — which returns row-level detail and can be very large —
+if the customer explicitly asks to see failing rows here in the chat. Default to a small
+`pageSize` (10–20) rather than pulling everything; offer the next page only if asked.
 
-Then interpret the report using `references/reading-results.md` and explain what the failures mean
-in business terms and what likely caused them.
+Then interpret whatever you pulled using `references/reading-results.md` and explain what the
+failures mean in business terms and what likely caused them.
 
 ## Communication
 Lead with the business meaning, not the mechanics. "The overnight customer checks passed except
