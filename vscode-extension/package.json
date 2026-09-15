@@ -1,0 +1,182 @@
+{
+  "name": "mcp-server",
+  "displayName": "iceDQ MCP",
+  "description": "The  iceDQ MCP Server lets you manage your entire data quality lifecycle through conversation with an AI assistant. Ask it to explore your data sources, create validation rules, run reconciliations, monitor executions, and analyze results.",
+  "version": "2.0.0",
+  "publisher": "icedq",
+  "license": "Apache-2.0",
+  "icon": "icon.png",
+  "homepage": "https://docs.icedq.com/guides/mcp-server/intro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/icedq-tools/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/icedq-tools/mcp-server/issues"
+  },
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Other"
+  ],
+  "keywords": [
+    "mcp",
+    "model context protocol",
+    "icedq",
+    "icedq tools",
+    "icedq mcp server",
+    "data-quality",
+    "data-testing",
+    "data-validation"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "icedqMcpProvider",
+        "label": "iceDQ MCP Server"
+      }
+    ],
+    "commands": [
+      {
+        "command": "icedq.setAuthType",
+        "title": "iceDQ: Set Authentication Type"
+      },
+      {
+        "command": "icedq.setBaseUrl",
+        "title": "iceDQ: Set Base URL"
+      },
+      {
+        "command": "icedq.setRealm",
+        "title": "iceDQ: Set Realm"
+      },
+      {
+        "command": "icedq.setOrgId",
+        "title": "iceDQ: Set Organization ID"
+      },
+      {
+        "command": "icedq.setClientId",
+        "title": "iceDQ: Set Client ID"
+      },
+      {
+        "command": "icedq.setUsername",
+        "title": "iceDQ: Set Username"
+      },
+      {
+        "command": "icedq.setTokensPath",
+        "title": "iceDQ: Set Tokens File Path"
+      },
+      {
+        "command": "icedq.setClientSecret",
+        "title": "iceDQ: Set Client Secret"
+      },
+      {
+        "command": "icedq.clearClientSecret",
+        "title": "iceDQ: Clear Client Secret"
+      },
+      {
+        "command": "icedq.setPassword",
+        "title": "iceDQ: Set Password"
+      },
+      {
+        "command": "icedq.clearPassword",
+        "title": "iceDQ: Clear Password"
+      },
+      {
+        "command": "icedq.clearAll",
+        "title": "iceDQ: Clear All Settings and Credentials"
+      }
+    ],
+    "configuration": {
+      "title": "iceDQ MCP",
+      "properties": {
+        "icedq.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "The base URL of your iceDQ instance (e.g., https://app.icedq.net)."
+        },
+        "icedq.realm": {
+          "type": "string",
+          "default": "icedq",
+          "description": "The authentication realm name (e.g., icedq or iam.icedq)."
+        },
+        "icedq.orgId": {
+          "type": "string",
+          "default": "org-icedq",
+          "description": "Your iceDQ organization ID (e.g., org-iam.icedq)."
+        },
+        "icedq.authType": {
+          "type": "string",
+          "enum": [
+            "username_password",
+            "access_token",
+            "device_flow"
+          ],
+          "default": "device_flow",
+          "description": "How to authenticate with iceDQ. 'device_flow' opens a browser login (recommended). 'username_password' uses the credentials below. 'access_token' uses a token file."
+        },
+        "icedq.clientId": {
+          "type": "string",
+          "default": "",
+          "description": "OAuth client ID for API authentication. Required for 'device_flow' and 'username_password'. You'll be prompted for this automatically on first use if left empty."
+        },
+        "icedq.rememberMe": {
+          "type": "boolean",
+          "default": true,
+          "description": "Device flow only: keep you signed in across restarts by persisting the refresh token. Disable to require a fresh device-flow login every time the server starts."
+        },
+        "icedq.username": {
+          "type": "string",
+          "default": "",
+          "description": "Your iceDQ username. Required when Authentication Type is 'username_password'. Set the password via the 'iceDQ: Set Password' command (or you'll be prompted automatically on first use)."
+        },
+        "icedq.tokensPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to a JSON file containing access_token and refresh_token. Required when Authentication Type is 'access_token'."
+        },
+        "icedq.verifySsl": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable SSL certificate verification. Disable only for self-signed certificates in testing."
+        },
+        "icedq.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose debug logging for the iceDQ MCP server."
+        },
+        "icedq.requestTimeout": {
+          "type": "number",
+          "default": 60,
+          "description": "Timeout for API requests, in seconds."
+        },
+        "icedq.logLevel": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug"
+          ],
+          "default": "info",
+          "description": "Log level for the iceDQ MCP server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "prepare-server": "node scripts/copy-server.js",
+    "vscode:prepublish": "npm run prepare-server",
+    "package": "npm run prepare-server && vsce package",
+    "publish": "npm run prepare-server && vsce publish"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.2.1"
+  }
+}

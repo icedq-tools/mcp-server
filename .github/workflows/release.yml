@@ -1,12 +1,11 @@
 name: Release
 
-# Publishes @icedq/mcp-server to npm, then registers/updates the listing in
-# the official MCP Registry (registry.modelcontextprotocol.io), when a GitHub
+# Publishes @icedq/mcp-server to npm, then publishes server.json to the
+# official MCP Registry (registry.modelcontextprotocol.io), when a GitHub
 # Release is published, or on-demand via manual dispatch.
 # npm auth is handled via npm Trusted Publishing (OIDC) — no NPM_TOKEN.
-# MCP Registry auth is handled via GitHub OIDC — no extra secret needed,
-# since the server name (io.github.icedq-tools/mcp-server) is namespaced to
-# this GitHub org/repo.
+# MCP Registry auth is handled via GitHub OIDC — no extra secret, since
+# server.json's name (io.github.icedq-tools/mcp-server) matches this org.
 # The `release` environment gates every publish behind required reviewers.
 #
 # This repository is public, so npm provenance is enabled below — each publish

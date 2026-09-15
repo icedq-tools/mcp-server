@@ -1,92 +1,112 @@
 ---
 name: icedq-author-rules
-description: Interactive, from-scratch authoring of iceDQ data quality rules through the iceDQ MCP server. Use whenever a customer wants to CREATE a data quality check or rule and does NOT already have a mapping document or ETL code to drive it — e.g. "check my customer table for nulls and duplicates", "set up a data quality rule on Snowflake", "compare my staging and warehouse tables", "reconcile source vs target", "validate this file", "add a completeness check", or "I need to catch bad records in orders". Walks the customer from connection discovery through profiling to picking the CORRECT rule type (Validation, Duplicate, Pushdown, Recon, Checksum) and creating a published rule. Do NOT use this for questions about how iceDQ works (that is the docs skill), for running or scheduling existing rules, or when the customer already has a mapping doc or ETL script (use the mapping/ETL rule-creation skills instead).
+description: Creates iceDQ rules via the MCP server — the single creation path all iceDQ skills funnel through. Direct mode (user-facing): use when the customer already KNOWS the checks they want — they name COLUMNS or CHECK TYPES, not just a table and a goal — e.g. "check my customer table for nulls and duplicates", "create a validation rule on ORDERS with NotNull on order_id", "add a completeness check to the invoices table", "make order_id unique". Resolves the environment, confirms a short plan, creates the rules, offers execution. Build mode (invoked by other iceDQ skills, not by user phrasing): consumes a confirmed rule spec (references/rule-spec.md) from icedq-suggest-checks, icedq-compare-datasets, icedq-mapping-doc-rules, or icedq-etl-code-rules and creates WITHOUT re-asking approved decisions. NOT for: recommendations or coverage ("what should I be checking" → icedq-suggest-checks), migration/reconciliation planning (icedq-compare-datasets), running or scheduling existing rules.
 server_compat: ">=2.0.0"
 ---
 
-# iceDQ — Author Rules (interactive, from scratch)
+# iceDQ — Author Rules (Direct + Build)
 
-You help a customer build a **new iceDQ data quality rule** in **their own** iceDQ environment,
-using the iceDQ MCP server tools. The customer may not know iceDQ's rule taxonomy or how their
-connections are structured — your job is to guide them, pick the right rule type, and create a
-correct, published rule with their approval at each decision point.
+You create **new iceDQ data quality rules** in the customer's **own** iceDQ environment. This skill
+is the **only** place rules get created — other skills decide *what* rules are needed and hand you
+a **rule spec**; you own *how* to build them correctly.
 
-Read `references/rule-taxonomy.md` before choosing a rule type. Read `references/conventions.md`
-for the ID-resolution and communication rules that apply to every iceDQ skill.
+**Mode detection.** If you have been handed one or more rule specs (the format in
+`references/rule-spec.md`) by another skill or an earlier planning step → **Build mode**. If a
+person is telling you the specific checks they want → **Direct mode**. If they are instead asking
+what they *should* check, want recommendations, or want to explore — that is the advisor's job:
+hand off to `icedq-suggest-checks`. Direct mode ends by producing specs and running them through
+the Build steps — one creation path, whichever door the work came in through.
 
-## Golden rules (read once, apply always)
+Read `references/conventions.md` (ID resolution, get_guidance-first, async, communication),
+`references/rule-taxonomy.md` (rule-type decisions and naming), `references/rule-spec.md` (the
+contract), and `references/cross-platform-recon.md` before any two-dataset comparison.
 
-1. **`get_guidance` is always step 1.** Before you touch a rule-creation tool, call
-   `get_guidance` for the matching topic (`create_validation_rules`, `create_recon_rules`,
-   `create_pushdown_rules`, `create_duplicate_rules`, `create_checksum_rules`, or
-   `data_profiling_workflow`). The guidance is authoritative and may have changed; follow it over
-   memory.
-2. **Never hardcode IDs.** Every workspaceId, connectionId, folderId, ruleId is a UUID that only
-   exists in *this customer's* environment. Resolve each one from the matching `list_*` tool at
-   run time. See `references/conventions.md`.
-3. **Approval-gated, human-in-the-loop.** This is the customer's production metadata. When more
-   than one option exists (workspace, connection, folder, table, columns, checks, rule name),
-   present the options and **wait** for the customer to choose. Do not auto-pick defaults and do
-   not invent names.
-4. **Pick the right rule type.** Mis-assigning a rule type is the most common and most damaging
-   mistake. Use the decision guide in `references/rule-taxonomy.md` every time.
-5. **Only execute if asked.** Creating a rule and running it are separate decisions. Rules created
-   via MCP are auto-published and ready to run, but do not run them unless the customer explicitly
-   says so — then hand off to the run-and-report flow.
+## Golden rules (both modes)
 
-## The authoring workflow
+1. **`get_guidance` is always step 1** before touching a creation tool (`create_validation_rules`,
+   `create_recon_rules`, `create_pushdown_rules`, `create_duplicate_rules`,
+   `create_checksum_rules`). It ships inside the customer's server and is authoritative over these
+   references.
+2. **Never hardcode IDs.** Every workspaceId, connectionId, folderId, ruleId is a UUID unique to
+   this tenant — resolve each from the matching `list_*` tool at run time.
+3. **Plan before create.** Never call a creation tool until the customer has seen and approved a
+   plan of what will be built. In Build mode the approved plan *is* the spec.
+4. **Never ask the same question twice.** A populated spec field is an approved decision
+   (`rule-spec.md` invariant). Ask only about blanks and `openQuestions`.
+5. **Right rule type, once.** In Direct mode, translate the customer's asks with
+   `references/rule-taxonomy.md`. In Build mode, the producer already chose — **validate, don't
+   re-choose**; if a spec is mis-typed, flag it back with reasoning.
+6. **Execute only with consent.** Creating and running are separate decisions. Always offer; never
+   assume.
 
-### Step 1 — Understand the data question
-Ask the customer, in plain language, what they are trying to protect against. Translate their
-answer into a rule type using `references/rule-taxonomy.md`. If it's ambiguous, ask one clarifying
-question rather than guessing.
+## Direct mode — building the checks a customer names
 
-### Step 2 — Resolve the workspace and connection
-- `list_workspaces` → present → customer selects `workspaceId`.
-- `list_connections(workspaceId)` → show **ACTIVE** connections only → customer selects the
-  connection(s). Recon and Checksum need a source **and** a target connection.
-- Detect file connections early. Types `flat-file`, `parquet`, `excel`, `json`, `xml`,
-  `flat-file-sql` follow a different path — **never** call a `create_*_rule` tool directly for a
-  file connection; you must register the file first with `fetch_file_sample_data`. The exact
-  file flow per rule type is in the `get_guidance` output for that rule type — follow it.
+### Step 1 — Capture and translate
+Take their list of checks as stated. Translate each into the correct rule type with
+`references/rule-taxonomy.md`; ask one clarifying question where an item is ambiguous rather than
+guessing. Combine all row-level checks for one table into ONE Validation rule. If at any point they
+ask "what else should I check?" or want recommendations — hand off to `icedq-suggest-checks`.
 
-### Step 3 — Choose the target
-- `list_folders(workspaceId)` → customer selects a `folderId`. If a suitable folder doesn't
-  exist, read `get_guidance('rule_organization')`, propose a name (alphanumeric + underscores,
-  no spaces/hyphens), and only `create_folder` after approval.
-- For a table target: walk `list_connection_metadata` from `database` → `schema` → `table`
-  (skip `database` if `get_database_metadata` shows the connection has no database hierarchy).
-  Or accept custom SQL from the customer.
+### Step 2 — Resolve the environment
+`list_workspaces` → workspace; `list_connections` → **ACTIVE** connection(s) (Recon/Checksum need
+two). Detect file connections early (`flat-file`, `parquet`, `excel`, `json`, `xml`,
+`flat-file-sql`) — files follow the `fetch_file_sample_data`-first flow in `get_guidance`, never a
+direct create call. Confirm the exact table via `list_connection_metadata`
+(`database → schema → table`; skip `database` when `get_database_metadata` shows no database
+hierarchy) — the same table name can exist in multiple schemas; never assume. Offer a
+`fetch_db_sample_data` preview if the customer wants to confirm the data. `list_folders` → folder
+(propose + `create_folder` only after approval).
 
-### Step 4 — Profile before you prescribe (Validation especially)
-For column-level checks, don't guess what to test. Follow `data_profiling_workflow`:
-`fetch_db_sample_data` → `profile_data` → `suggest_quality_checks`. Present the suggested checks,
-explain each in plain terms, and let the customer include / exclude / modify. Clean data returning
-no suggestions is normal, not an error.
+### Step 3 — Check for existing rules (reuse before create)
+`list_rules(workspaceId, nameFilter=<table name>)` → for plausible matches, `get_rule` to confirm
+what they actually check. Advise per requested check: **reuse as-is / extend (`update_rule`) /
+create new** — never propose a check the customer already has. Carry these decisions into Step 4's
+plan.
 
-### Step 5 — Confirm the rule name, then create
-Ask the customer for the `ruleName` (offer a convention-based suggestion from
-`references/rule-taxonomy.md`, but let them decide). Then call the correct creation tool with the
-approved inputs. **Combine all checks for one table into ONE Validation rule** — do not create a
-separate rule per check.
+### Step 4 — Confirm the plan
+Present a short plan: each rule's proposed name (naming convention from the taxonomy; they decide),
+type and why, checks, and folder. **Wait for confirmation**; apply edits.
 
-### Step 6 — Confirm back, in plain language
-Tell the customer what was created: rule name, what it checks, where it lives, and that it is
-published and ready to run. Offer the next step: "Want me to run it now and show you what passes
-or fails?" — that hands off to the run-and-report flow.
+### Step 5 — Create via the Build path
+Run each approved item as an internal rule spec through the Build mode steps below — one creation
+path to maintain and test.
 
-## Rule-type quick reference (full detail in references/rule-taxonomy.md)
+### Step 6 — Explain, then offer execution
+Per rule: name, what it checks, where it lives, published and ready to run (MCP-created rules
+auto-publish — never tell them to publish from the UI). Then ask: "Want me to run these now?"
+If yes: `execute_rules_or_workflows` → poll `get_workflow_run_status_or_result` (2–3s) to a
+terminal state → summarize in business terms → default to the exception-report link plus
+check-level stats (`conventions.md` §9); pull row-level detail via `get_checks_exception_report`
+only if the customer explicitly asks to see it in chat. Deep failure analysis hands off to the
+run-and-report flow.
 
-- **Validation** — row-level checks on a single dataset (NotNull, ValidValues, Format, Length,
-  Date, Custom Groovy). "Is each row well-formed?"
-- **Duplicate** — uniqueness of a business key. "Are these columns unique?"
-- **Pushdown** — a SQL query the customer writes that returns ONLY the bad rows (0 rows = pass).
-  Preferred for large tables, cross-table joins, GROUP BY/HAVING, referential integrity.
-- **Recon** — row-by-row comparison of two datasets on a join key (source vs target column
-  values, orphans). Use only for cross-dataset row-level comparison.
-- **Checksum** — aggregate comparison of two datasets (COUNT/SUM/AVG etc., source vs target).
-  "Do the totals match after the load?"
-- **Script** — last resort, only when none of the above fit.
+## Build mode — creating from a rule spec
 
-Custom expressions everywhere use **TRUE = PASS**: write the condition that describes *valid*
-data, and never negate it with `!()`.
+### Step 1 — Validate the spec
+- `ruleType` against `references/rule-taxonomy.md`. If it's wrong for the job the spec describes,
+  **stop and flag back** to the producer/customer with your reasoning — never silently re-choose.
+- Required fields present for that type (see `rule-spec.md`); all IDs are resolved UUIDs.
+- Two-dataset specs (Recon/Checksum): confirm the comparison settings are deliberate —
+  cross-platform specs should set `sortMode` explicitly (`cross-platform-recon.md` §1). If the
+  producer left it unset for a cross-platform pair, raise it *before* creating: **`sortMode` is
+  create-time-only** and cannot be patched later.
+
+### Step 2 — Resolve blanks only
+Populated = approved (never re-ask). For blanks and `openQuestions`, ask the customer now — these
+are the only questions Build mode is allowed to ask.
+
+### Step 3 — Guidance, then create
+`get_guidance` for the rule type → follow it over the spec's field naming → call the matching
+`create_*` tool (file datasets: `fetch_file_sample_data` first, per guidance; if the spec carries
+`existingDraftRuleId` from the producer's file registration, complete that draft via `update_rule`
+instead of creating anew). One tool call per spec; rules auto-publish.
+
+### Step 4 — Confirm back in the spec's terms
+Report `ruleId`, name, state, and what it checks — to the customer in Direct mode, or back to the
+invoking flow (which owns run/report next steps) otherwise. If creation fails, report the error
+against the spec field that caused it; don't improvise a different rule shape.
+
+## Communication
+Lead with the business meaning ("this rule catches customer rows with no email address"), then the
+mechanics for those who want them. Plans and results are read by data owners, not just engineers —
+see `references/conventions.md` §5.

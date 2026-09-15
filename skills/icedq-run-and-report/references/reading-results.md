@@ -23,6 +23,10 @@ row-level exception report for Pushdown, only the count.
   `"BNA"` = target orphan (in target, not source).
 - Pagination — default page size is limited; pass `pageSize` (e.g. 100) and check
   `pageable.pages`. After a page, offer to fetch the next.
+- **Size caution:** response size scales with `pageSize` × configured checks — a single page on a
+  rule with many checks can run to hundreds of thousands of tokens. Default to a small `pageSize`;
+  prefer the link + stats default (SKILL.md Step 5) unless the customer explicitly wants rows in
+  chat.
 
 ## Interpreting patterns (say the likely cause in plain terms)
 - **High failures on one check** → a data quality problem in that specific column.

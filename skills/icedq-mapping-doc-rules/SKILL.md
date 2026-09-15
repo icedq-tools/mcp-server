@@ -1,6 +1,6 @@
 ---
 name: icedq-mapping-doc-rules
-description: Uses a mapping document provided by the user (Excel, CSV, or Word source-to-target mapping specification) to identify and generate iceDQ rules — Validation, Duplicate, Checksum, Recon, and Pushdown. Use whenever the user uploads or points to a mapping doc or ETL mapping sheet and wants rules derived from it, e.g. "create rules from this mapping document", "here is our source-to-target spec, generate the checks", "turn this column mapping into iceDQ rules". Do NOT use for interactive from-scratch authoring without a mapping doc (use icedq-author-rules), for rules from ETL or SQL code (use icedq-etl-code-rules), or for running or scheduling existing rules (use icedq-run-and-report / icedq-schedule-and-monitor).
+description: Uses a mapping document provided by the user (Excel, CSV, or Word source-to-target specification) to identify and design iceDQ rules — Validation, Duplicate, Checksum, Recon, Pushdown. Use whenever the user uploads or points to a mapping doc or ETL mapping sheet and wants checks derived from it, e.g. "create rules from this mapping document", "here is our source-to-target spec, generate the checks", "turn this column mapping into iceDQ rules". Analyzes the document and designs the checks, then emits approved rule specs (references/rule-spec.md) to icedq-author-rules Build mode, which performs the creation. NOT for: authoring without a mapping doc (icedq-author-rules, or icedq-suggest-checks for guidance), ETL/SQL code (icedq-etl-code-rules), migration/reconciliation planning (icedq-compare-datasets, which may invoke this skill), running or scheduling existing rules.
 server_compat: ">=2.0.0"
 ---
 
@@ -8,6 +8,11 @@ server_compat: ">=2.0.0"
 
 Extract ALL quality rules from a column mapping spec. ONE Validation rule per table (all checks combined). Rule types:
 Validation, Duplicate, Checksum, Recon, Pushdown.
+
+**Output contract:** this skill designs and gets approval; it does NOT call `create_*` tools. The
+approved Rule Plan is converted into **rule specs** (`references/rule-spec.md`) and handed to
+**`icedq-author-rules` Build mode**, which validates, creates, and confirms each rule. Every
+decision approved here travels in the spec — Build mode never re-asks (populated field = approved).
 
 ---
 
@@ -228,7 +233,8 @@ defined.
 
 ## STEP 6 — PRE-PLAN TOOL CALLS (ALL required before Rule Plan)
 
-Each rule type has a guidance doc with exact parameters, field specs, and file connection workflows — pulling it before building that rule keeps you on the right path.
+Analysis tooling runs here; **creation guidance (`get_guidance('create_*_rules')`) is Build mode's
+job** — do not pull it in this skill.
 
 **6a Validation (source + target):**
 
@@ -236,36 +242,45 @@ DB connection:
 1. `fetch_db_sample_data` — inspect values, nulls, formats
 2. `profile_data` — null rates, distinct counts, type confirmation
 3. `suggest_quality_checks` — cross-reference with extracted signals
-4. `get_guidance('create_validation_rules')` + `get_guidance('groovy_expressions')`
+4. `get_guidance('groovy_expressions')` — before writing any Custom expression for a spec
 
 File connection:
-1. Sample data already returned by `fetch_file_sample_data` from Step 1
+1. Sample data already returned by `fetch_file_sample_data` from Step 1 (note the returned draft
+   ruleId — it goes into the spec as `existingDraftRuleId`)
 2. `profile_data` on returned rows — inspect actual value distributions (flat-file columns always start as "Text")
-3. `get_guidance('create_validation_rules')` — has the update_rule checksToAdd pattern for file rules
 
-**6b Duplicate:** `profile_data` on key cols — confirm distinct=total; `get_guidance('create_duplicate_rules')`
+**6b Duplicate:** `profile_data` on key cols — confirm distinct=total
 
 **6c Checksum:**
-- DB: reuse profile row counts; SQL mode: `fetch_db_sample_data` on each SQL (1 row, 1 non-NULL numeric, no error); `get_guidance('create_checksum_rules')`
-- File: `fetch_file_sample_data(ruleType="Checksum")` already done; `get_guidance('create_checksum_rules')` — especially important for flat-file aggregation column selection
+- DB: reuse profile row counts; SQL mode: `fetch_db_sample_data` on each SQL (1 row, 1 non-NULL numeric, no error)
+- File: `fetch_file_sample_data(ruleType="Checksum")` already done in Step 1
 
-**6d Recon:** `analyze_recon_mapping` → confirm join key + column mapping; `get_guidance('create_recon_rules')`
+**6d Recon:** `analyze_recon_mapping` → confirm join key + column mapping.
 Use results to: confirm join key alignment; identify decode/type-cast cols needing custom expressions; flag SKIP cols.
+Cross-platform source/target → decide `sortMode` now (see `references/cross-platform-recon.md`); it
+is create-time-only and must be in the spec.
 
-**6e Pushdown:**
-- DB: `fetch_db_sample_data` on child+parent tables; `get_guidance('create_pushdown_rules')`
-- File: sample data from `fetch_file_sample_data`; `get_guidance('create_pushdown_rules')`
+**6e Pushdown:** DB: `fetch_db_sample_data` on child+parent tables to validate the SQL. File: sample data from `fetch_file_sample_data`.
+
+**6f Existing rules (reuse before create):** `list_rules(workspaceId, nameFilter=<table name>)` →
+for plausible matches, `get_rule` to confirm what they check → classify **reuse as-is / extend
+(`update_rule`) / create new** per planned check. Drop anything already covered from the Rule Plan.
 
 **Checklist before Rule Plan:**
 
 - [ ] Connections resolved · Schemas/files confirmed · Tables/columns confirmed
 - [ ] DB: fetch_db_sample_data + profile_data + suggest_quality_checks | File: fetch_file_sample_data columns + data inspected
-- [ ] analyze_recon_mapping done (if join key exists)
-- [ ] get_guidance('groovy_expressions') + get_guidance('create_<rule_type>_rules') for each planned rule type
+- [ ] analyze_recon_mapping done (if join key exists) · sortMode decided for cross-platform recons
+- [ ] get_guidance('groovy_expressions') pulled before any Custom expression was written
+- [ ] list_rules checked for existing coverage · reuse/extend/create-new decided per check
 
 ---
 
 ## STEP 7 — RULE PLAN (present; wait for approval before creating)
+
+Per `conventions.md` §8: precede this technical listing with one plain-language line per table —
+what it tests and the risk it protects against — the template below is the **how**, not the whole
+plan.
 
 ```
 CONNECTION TYPE: DB | File | Mixed
@@ -286,23 +301,26 @@ Modify plan if user requests; re-confirm before proceeding.
 
 ---
 
-## STEP 8 — EXECUTION ORDER
+## STEP 8 — SPEC HANDOFF (Build mode creates)
 
-**DB connections:**
-1. `create_validation_rule` source (one per source table) — get_guidance('create_validation_rules') has the exact checks schema
-2. `create_validation_rule` target
-3. `create_duplicate_rule`
-4. `create_checksum_rule`
-5. `create_recon_rule` — always call analyze_recon_mapping first; get_guidance('create_recon_rules') has join key patterns
-6. `create_pushdown_rule` (CRITICAL first)
+Convert each approved Rule Plan line into a complete **rule spec** per `references/rule-spec.md`:
+resolved IDs (workspace, connection, folder), datasets (table or SQL), checks with expressions,
+join keys, result types, `sortMode` for cross-platform recons, criticality — and `producedBy:
+icedq-mapping-doc-rules`. Anything the customer has not decided goes in `openQuestions`, not
+guessed. File datasets carry `existingDraftRuleId` from Step 1 registration.
 
-**File connections:**
-1. `fetch_file_sample_data` → draft rule created (ruleId returned)
-2. Profile returned sample data + suggest_quality_checks
-3. `update_rule(ruleId, checksToAdd=[...])` → publishes (Validation/Pushdown)
-4. For Recon/Checksum with DB target: `update_rule(ruleId, targetConfig={connectionId, schemaName, tableName}, ...)` → wires DB side and publishes
+Hand the batch to **`icedq-author-rules` Build mode** in this order (it validates each spec,
+creates, and returns the ruleId — confirm each before proceeding):
 
-Confirm ruleId after each before proceeding.
+1. Source Validation spec(s) — one per source table
+2. Target Validation spec(s)
+3. Duplicate spec(s)
+4. Checksum spec(s)
+5. Recon spec(s)
+6. Pushdown spec(s) — CRITICAL severity first
+
+If Build mode flags a spec back (e.g. mis-typed rule, missing create-time setting), resolve it with
+the customer here — the design decision belongs to this skill — and re-hand the corrected spec.
 
 ---
 
@@ -331,111 +349,16 @@ UniqueKey=YES→Duplicate both sides unless doc says source uniqueness not guara
 
 **Severity:** Never skip CRITICAL/BLOCKER. Never auto-create LOW/INFO — ask user.
 
-**File connections:** NEVER call create_validation_rule / create_recon_rule / create_checksum_rule directly for file connections. Always start with `fetch_file_sample_data`. The draft is completed via `update_rule`. File columns always start as "Text" — inspect sample data values to determine real datatypes before designing checks.
+**File connections:** file schemas are registered with `fetch_file_sample_data` during Step 1 (this
+creates a draft rule — carry its ruleId in the spec as `existingDraftRuleId`). File columns always
+start as "Text" — inspect sample data values to determine real datatypes before designing checks.
 
-**Process:** Complete Step 6 before Rule Plan. Present full plan before any create_* call. Pull `get_guidance('create_<rule_type>_rules')` for each rule type — it has the exact parameters, file connection handling, and expression patterns. Saves time and prevents mistakes.
+**Process:** This skill calls NO `create_*` or `update_rule` tools — creation belongs to
+`icedq-author-rules` Build mode via rule specs. Complete Step 6 before the Rule Plan. Present the
+full plan and get explicit approval before handing any spec to Build mode.
 
-**S.[col] vs T.[col] — CRITICAL:**
-
-- Validation rules → ALWAYS S.[col] (even targeting DW/target table). Engine presents all rows as "source".
-- T.[col] → ONLY in Recon rules (S.[col]=source row, T.[col]=target row).
-- T.[col] in a Validation rule → errorCount=total rows, successCount=0 (100% error, engine crash). Confirmed production
-  failure.
-- Rule: create_validation_rule → S.[col] always. create_recon_rule → S.[col] source, T.[col] target.
-
-**Snowflake NUMERIC/BigDecimal — CRITICAL:**
-
-- Snowflake NUMBER/DECIMAL → Java BigDecimal at runtime. Raw operators (!=0, >=0, >0) throw ClassCastException → 100%
-  error rate.
-- Use: `S.[col].compareTo(java.math.BigDecimal.ZERO) != 0 / > 0 / >= 0`
-- Tolerance: `(S.[A].subtract(S.[B].multiply(S.[C]))).abs().compareTo(new java.math.BigDecimal("0.01"))<=0`
-- SQL Server INT/DOUBLE → direct operators safe. TEXT numeric → cast:
-  `S.[col]==~/^-?\d+(\.\d+)?$/ && new BigDecimal(S.[col])>0`
-- Confirm with `fetch_db_sample_data` + `typeof()` before writing arithmetic.
-
-**DATE / TIMESTAMP expressions (canonical — use exactly):**
-
-**iceDQ date parsing — always use `new Date().parse("fmt", value)` (confirmed from Groovy_Expressions_Overview.xlsx):**
-
-- This is the iceDQ-native form. `new java.text.SimpleDateFormat().parse()` is NOT the preferred pattern for date
-  parsing in iceDQ Groovy. Use `new Date().parse("fmt", S.[col])` for TEXT→Date conversion.
-- `Date.parse('fmt','value')` (static form) works for literal date constants only. Use `new Date().parse()` for field
-  values.
-
-**DATE/TIMESTAMP col (icedqDatatype DATE or TIMESTAMP) — already a Java Date object, no parsing needed:**
-
-- Null check + future guard: `S.[col]!=null && S.[col]<=new Date()`
-- Year compare: `S.[col]!=null && S.[col]>new Date().parse('yyyy','2014')`
-- Range:
-  `S.[col]!=null && S.[col]>=new Date().parse('yyyy-MM-dd','2020-01-01') && S.[col]<=new Date().parse('yyyy-MM-dd','2024-12-31')`
-- Format check (DATE col → format as string):
-  `S.[col]!=null && new Date().parse("yyyy-MM-dd", S.[col].toString().substring(0,10)).format("yyyy-MM-dd")==~/\d{4}-\d{2}-\d{2}/`
-- Ordering (both DATE cols): `S.[start]!=null && S.[end]!=null && !S.[end].before(S.[start])`
-- Strip time portion: `S.[col]!=null && S.[col].clearTime()`
-- Extract year: `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.get(Calendar.YEAR)`
-- Extract month: `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.get(Calendar.MONTH)+1`
-- Extract day: `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.get(Calendar.DAY_OF_MONTH)`
-- Add N days: `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.add(Calendar.DATE,N); cal.getTime()`
-- Add N months: `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.add(Calendar.MONTH,N); cal.getTime()`
-- Date diff in days: `def d1=S.[col1]; def d2=S.[col2]; (d1-d2).abs()`
-
-**TEXT col (string-stored date) — regex guard first, then parse with new Date().parse():**
-
-- Format guard dd/MM/yyyy: `S.[col]!=null && S.[col]==~/^\d{2}\/\d{2}\/\d{4}$/`
-- Format guard dd/MM/yyyy HH:mm:ss: `S.[col]!=null && S.[col]==~/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/`
-- Format guard yyyyMMdd: `S.[col]!=null && S.[col]==~/^\d{8}$/`
-- Format guard yyyy-MM-dd (string): `S.[col]!=null && S.[col]==~/^\d{4}-\d{2}-\d{2}$/`
-- Format guard yyyy-MM-ddTHH:mm:ss: `S.[col]!=null && S.[col]==~/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/`
-- Parse validity (try/catch — Validation rules only):
-  `S.[col]!=null && { try{new Date().parse("dd/MM/yyyy",S.[col]);true}catch(e){false} }`
-- TEXT→Date conversion: `def d = new Date().parse("yyyy-MM-dd", S.[col])`
-- TEXT→String reformatted: `new Date().parse("yyyy-MM-dd", S.[col]).format("yyyy-MM-dd")`
-- TEXT ordering (NEVER use >= on TEXT date strings — lexicographic ≠ chronological):
-  `S.[start]!=null && S.[end]!=null && new Date().parse("dd/MM/yyyy",S.[start]).before(new Date().parse("dd/MM/yyyy",S.[end]))`
-- Date diff from two TEXT cols:
-  `def d1=new Date().parse("yyyy-MM-dd",S.[col1]); def d2=new Date().parse("yyyy-MM-dd",S.[col2]); (d1-d2)`
-
-**instanceof guard — use when column type may be DATE or TEXT depending on platform:**
-
--
-
-`if(!(S.[col] instanceof Date)) { def d=new Date().parse("yyyy-MM-dd",S.[col]); d.equals(T.[col]) } else { S.[col].equals(T.[col]) }`
-
-**Recon cross-format expressions — target DATE always use .toString().substring(0,10):**
-
-- src TEXT dd/MM/yyyy → tgt DATE:
-  `S.[col]!=null && T.[col]!=null && new Date().parse("dd/MM/yyyy",S.[col]).format("yyyy-MM-dd")==T.[col].toString().substring(0,10)`
-- src TEXT yyyy-MM-dd HH:mm:ss → tgt DATE (mandatory):
-  `S.[col]!=null && T.[col]!=null && S.[col].substring(0,10)==T.[col].toString().substring(0,10)`
-- src TEXT yyyy-MM-dd HH:mm:ss → tgt DATE (nullable):
-  `S.[col]==null ? T.[col]==null : T.[col]!=null && S.[col].substring(0,10)==T.[col].toString().substring(0,10)`
-  All 4 cases: src null+tgt null ✅ | src null+tgt value ❌ | src value+tgt null (orphan) ❌ | both values → compare ✅
-- src DATE → tgt TEXT dd/MM/yyyy:
-  `S.[col]!=null && T.[col]!=null && S.[col].format("dd/MM/yyyy")==T.[col]`
-- src DATE → tgt TEXT yyyy-MM-dd:
-  `S.[col]!=null && T.[col]!=null && S.[col].toString().substring(0,10)==T.[col]`
-
-**Decision tree — always check icedqDatatype first:**
-
-1. DATE/TIMESTAMP → Java Date object → use `.before()`, `.after()`, `.clearTime()`, `.format()`, Calendar API directly
-2. TEXT → string → regex guard first, then `new Date().parse("fmt", S.[col])` to convert before comparing
-3. Unknown/mixed → use `instanceof Date` guard
-   Call `fetch_db_sample_data` (DB) or inspect `fetch_file_sample_data` data rows (File) to confirm actual runtime type before writing any date expression.
-
-**Recon-specific ANTI-PATTERNS — CRITICAL (confirmed from production failures):**
-
-- `SimpleDateFormat.format(T.[col])` on target DATE icedqDatatype → throws runtime exception. Snowflake DATE is
-  java.sql.Date; its `.toString()` returns "yyyy-MM-dd" already. Use `T.[col].toString().substring(0,10)` or
-  `T.[col].format("yyyy-MM-dd")` instead.
-- `T.containsKey('col')` → NOT SUPPORTED. Orphan rows have T.[col]=null, not absent. Use `T.[col]==null` guard.
-- `try { ... } catch(e) { false }` in Recon expressions → NOT SUPPORTED. try/catch is ONLY valid in Validation Custom
-  checks.
-- `Date.parse('fmt','value')` with a field variable → unreliable. Use `new Date().parse("fmt", S.[col])` for field
-  values.
-- `>= / <=` on TEXT date strings → lexicographic comparison, NOT chronological. Always parse first.
-
-**Type conversion (for TEXT columns holding numeric values):**
-
-- Preferred (reliable): `Integer.parseInt(S.[col])`, `Double.parseDouble(S.[col])`, `Float.parseFloat(S.[col])`
-- Alternative (may not always work): `S.[col].toInteger()`, `S.[col].toDouble()`, `S.[col].toFloat()`
-- Null-safe numeric cast: `S.[col]!=null && Integer.parseInt(S.[col])>=0`
+**Expression & platform recipes:** ALL canonical Groovy expressions (dates, BigDecimal, type
+conversion), S.[col]/T.[col] context rules, Recon expression anti-patterns, and tool-argument
+gotchas live in [references/groovy-recipes.md](references/groovy-recipes.md). Read the relevant
+section before writing ANY expression into a rule spec — these encode confirmed production
+failures.

@@ -1,6 +1,6 @@
 ---
 name: icedq-etl-code-rules
-description: Uses ETL/transformation code provided by the user (SQL stored procedures, dbt, PySpark, Spark Scala, SSIS, Informatica, Airflow, and similar) to identify and generate iceDQ rules — Validation, Duplicate, Checksum, Recon, and Pushdown. Use whenever the user shares ETL or pipeline code and wants data-quality rules extracted from it, e.g. "generate iceDQ rules from this stored procedure", "derive checks from our dbt model", "what rules should I add for this ETL job". Do NOT use for interactive from-scratch authoring without code (use icedq-author-rules), for mapping-document-driven rules (use icedq-mapping-doc-rules), or for running or scheduling existing rules (use icedq-run-and-report / icedq-schedule-and-monitor).
+description: Uses ETL/transformation code provided by the user (SQL stored procedures, dbt, PySpark, Spark Scala, SSIS, Informatica, Airflow, and similar) to identify and design iceDQ rules — Validation, Duplicate, Checksum, Recon, Pushdown. Use whenever the user SHARES pipeline code and wants checks derived from it, e.g. "generate iceDQ rules from this stored procedure", "here is my dbt model, derive the checks". The code must actually be provided — naming an ETL tool without sharing code is an advice request (icedq-suggest-checks). Analyzes the code and designs the checks, then emits approved rule specs (references/rule-spec.md) to icedq-author-rules Build mode, which performs the creation. NOT for: authoring without code (icedq-author-rules), mapping documents (icedq-mapping-doc-rules), migration/reconciliation planning (icedq-compare-datasets, which may invoke this skill), running or scheduling existing rules.
 server_compat: ">=2.0.0"
 ---
 
@@ -8,6 +8,11 @@ server_compat: ">=2.0.0"
 
 Extract ALL quality rules from ETL code (SQL SP, dbt, PySpark, Spark Scala, SSIS, Informatica, Airflow, Databricks). ONE
 Validation rule per table. Rule types: Validation, Duplicate, Checksum, Recon, Pushdown.
+
+**Output contract:** this skill designs and gets approval; it does NOT call `create_*` tools. The
+approved Rule Plan is converted into **rule specs** (`references/rule-spec.md`) and handed to
+**`icedq-author-rules` Build mode**, which validates, creates, and confirms each rule. Every
+decision approved here travels in the spec — Build mode never re-asks (populated field = approved).
 
 ---
 
@@ -55,7 +60,7 @@ Tier 3/4: show lineage (src→staging→dw_fact) and ask which layer(s) to instr
    - Read the raw `data` rows to detect the real delimiter (`,` · `|` · `\t` · `;`).
    - Re-call: `fetch_file_sample_data(..., additionalConfigs={ columnDelimiter: "<correct>" })` before proceeding.
 4. Inspect returned columns and sample data — use these for check design.
-5. Rule is completed via `update_rule` (adds checks, wires DB side if mixed, publishes).
+5. The draft rule is completed later by Build mode via `update_rule` — carry the returned ruleId in the spec as `existingDraftRuleId`.
 
 **Connection/Table Not Found — escalation rule (Essential):**
 - If the ETL script references a schema, table, or database that cannot be found after listing connections: **STOP. Do NOT substitute with nearest-match tables.**
@@ -214,9 +219,10 @@ protection.
 SQL mode — **validate before Rule Plan:** `fetch_db_sample_data` on each SQL → must return 1 row, 1 non-NULL numeric col,
 no error.
 
-For file connections in Checksum: use `fetch_file_sample_data(ruleType="Checksum")` — the guidance at `get_guidance('create_checksum_rules')` has the full file vs DB workflow.
+For file connections in Checksum: use `fetch_file_sample_data(ruleType="Checksum")`; Build mode
+handles the file-vs-DB creation workflow from the spec.
 
-**Recon:** Call `analyze_recon_mapping` before `create_recon_rule`. Accept HIGH confidence; ask user on MEDIUM; skip
+**Recon:** Call `analyze_recon_mapping` before designing any Recon spec. Accept HIGH confidence; ask user on MEDIUM; skip
 LOW.
 
 > ⚠️ **`analyze_recon_mapping` call signature:** Pass `sourceColumns` and `targetColumns` as explicit arrays of column
@@ -315,41 +321,52 @@ filters intentionally: Checksum(source_count - target_count = expected_exclusion
 
 ## STEP 5 — PRE-PLAN TOOL CALLS (ALL required before Rule Plan)
 
-Each rule type has a guidance doc with the exact parameters, patterns, and field specs — pulling it before building that rule saves trial-and-error.
+Analysis tooling runs here; **creation guidance (`get_guidance('create_*_rules')`) is Build mode's
+job** — do not pull it in this skill.
 
 **5a Validation:**
-- DB: `fetch_db_sample_data` + `profile_data` + `suggest_quality_checks` (src + tgt) · `get_guidance('groovy_expressions')` · `get_guidance('create_validation_rules')`
-- File: sample data already from `fetch_file_sample_data` in Step 1 · `profile_data` on returned rows · `get_guidance('create_validation_rules')`
+- DB: `fetch_db_sample_data` + `profile_data` + `suggest_quality_checks` (src + tgt) · `get_guidance('groovy_expressions')` before writing any Custom expression
+- File: sample data already from `fetch_file_sample_data` in Step 1 (note the returned draft ruleId — it goes into the spec as `existingDraftRuleId`) · `profile_data` on returned rows
 
-**5b Duplicate:** `profile_data` on key cols (distinct=total check) · `get_guidance('create_duplicate_rules')`
+**5b Duplicate:** `profile_data` on key cols (distinct=total check)
 
 **5c Checksum:**
-- DB: reuse profile row counts · SQL mode: `fetch_db_sample_data` on each SQL (1 row, 1 non-NULL numeric, no error) · `get_guidance('create_checksum_rules')`
-- File: `fetch_file_sample_data(ruleType="Checksum")` already done in Step 1 · `get_guidance('create_checksum_rules')` — especially for flat-file aggregation selection
+- DB: reuse profile row counts · SQL mode: `fetch_db_sample_data` on each SQL (1 row, 1 non-NULL numeric, no error)
+- File: `fetch_file_sample_data(ruleType="Checksum")` already done in Step 1
 
-**5d Recon:** `analyze_recon_mapping` · `get_guidance('create_recon_rules')`. Use results: confirm join key alignment; identify decode/date/type-cast cols needing custom expressions; flag SKIP cols.
+**5d Recon:** `analyze_recon_mapping`. Use results: confirm join key alignment; identify decode/date/type-cast cols needing custom expressions; flag SKIP cols.
 - **Required:** collect `sourceColumns` + `targetColumns` arrays via `list_connection_metadata(entity="column")` for each table BEFORE calling `analyze_recon_mapping`. The tool takes column arrays, not connection IDs.
 - After mapping analysis: columns with different vocabulary (e.g., source=`"Active"`, target=`"ACT"`) → remove from Recon check list → plan a Pushdown rule for them instead.
+- Cross-platform source/target → decide `sortMode` now (see `references/cross-platform-recon.md`); it is create-time-only and must be in the spec.
 
 **5e Pushdown:**
-- DB: `fetch_db_sample_data` on child+parent tables; validate SQL · `get_guidance('create_pushdown_rules')`
-- File: sample data from `fetch_file_sample_data` · `get_guidance('create_pushdown_rules')`
+- DB: `fetch_db_sample_data` on child+parent tables; validate SQL
+- File: sample data from `fetch_file_sample_data`
+
+**5f Existing rules (reuse before create):** `list_rules(workspaceId, nameFilter=<table name>)` →
+for plausible matches, `get_rule` to confirm what they check → classify **reuse as-is / extend
+(`update_rule`) / create new** per planned check. Drop anything already covered from the Rule Plan.
 
 **Checklist:**
 
 - [ ] Connections · schemas/files · tables/columns all confirmed
 - [ ] DB: fetch_db_sample_data + profile_data + suggest_quality_checks (src + tgt) | File: fetch_file_sample_data returns columns + data
-- [ ] analyze_recon_mapping (if join key)
+- [ ] analyze_recon_mapping (if join key) · sortMode decided for cross-platform recons
 - [ ] Checksum/Pushdown SQL validated (DB: via fetch_db_sample_data; File: via fetch_file_sample_data)
-- [ ] get_guidance('groovy_expressions') + get_guidance('create_<rule_type>_rules') for each planned type
+- [ ] get_guidance('groovy_expressions') pulled before any Custom expression was written
+- [ ] list_rules checked for existing coverage · reuse/extend/create-new decided per check
 
 ---
 
 ## STEP 6 — RULE PLAN (present; wait for approval before creating)
 
-> ⛔ **Essential — Always present the full Rule Plan to the user and explicitly ask for approval before creating any rule.**
+> ⛔ **Essential — Always present the full Rule Plan to the user and explicitly ask for approval before handing anything to Build mode.**
 > The message must clearly communicate: what table/file will be used, what rule type, what checks will be created, and what the rule will be named.
-> Do NOT proceed to any `create_*` / `update_rule` call until the user explicitly approves the plan.
+> Do NOT hand any rule spec to `icedq-author-rules` Build mode until the user explicitly approves the plan.
+
+Per `conventions.md` §8: the callout above must also state what each check tests and the risk it
+protects against, in plain language, before the rule-type detail below — not just table/rule-type/
+name.
 
 ```
 CONNECTION TYPE: DB | File | Mixed
@@ -369,25 +386,34 @@ TOTAL: X rules / Y types
 
 ---
 
-## STEP 7 — EXECUTION ORDER
+## STEP 7 — SPEC HANDOFF (Build mode creates)
 
-**DB connections:**
-1. `create_validation_rule` source (one per source table) — get_guidance('create_validation_rules') has the exact checks schema
-2. `create_validation_rule` target/staging
-3. `create_duplicate_rule`
-4. `create_checksum_rule` (SQL already validated in 5c — do NOT re-validate)
-5. `create_recon_rule` — always call analyze_recon_mapping first; get_guidance('create_recon_rules') has join key patterns.
-   - Only include columns where source and target hold the **same vocabulary** (direct passthrough, or only case/whitespace differences — SimpleCompare handles those automatically).
-   - Columns with different vocabulary (code→full-word, abbrev→long-form) → **OMIT from Recon checks**, handle in step 6 via Pushdown instead.
-6. `create_pushdown_rule` (SQL already validated in 5e) — also use for any CASE decode mismatch columns excluded from step 5.
+Convert each approved Rule Plan line into a complete **rule spec** per `references/rule-spec.md`:
+resolved IDs (workspace, connection, folder), datasets (table or SQL — Checksum/Pushdown SQL
+already validated in Step 5), checks with expressions, join keys, result types, `sortMode` for
+cross-platform recons, criticality — and `producedBy: icedq-etl-code-rules`. Anything the customer
+has not decided goes in `openQuestions`, not guessed. File datasets carry `existingDraftRuleId`
+from Step 1 registration.
 
-**File connections:**
-1. `fetch_file_sample_data` → draft rule created (ruleId returned)
-2. Profile returned sample data + suggest_quality_checks
-3. `update_rule(ruleId, checksToAdd=[...])` → publishes (for Validation/Pushdown)
-4. For Recon/Checksum with DB target: `update_rule(ruleId, targetConfig={connectionId, schemaName, tableName}, ...)` → wires DB side and publishes
+Spec-content rules carried from the analysis:
+- Recon specs: only include columns where source and target hold the **same vocabulary** (direct
+  passthrough, or case/whitespace differences — SimpleCompare handles those). Different vocabulary
+  (code→full-word, abbrev→long-form) → **omit from the Recon spec** and cover with a Pushdown spec
+  (value-mapping pattern in Step 3).
+- Pushdown specs: CRITICAL severity first.
 
-Confirm ruleId after each before proceeding.
+Hand the batch to **`icedq-author-rules` Build mode** in this order (it validates each spec,
+creates, and returns the ruleId — confirm each before proceeding):
+
+1. Source Validation spec(s) — one per source table
+2. Target/staging Validation spec(s)
+3. Duplicate spec(s)
+4. Checksum spec(s)
+5. Recon spec(s)
+6. Pushdown spec(s)
+
+If Build mode flags a spec back (e.g. mis-typed rule, missing create-time setting), resolve it with
+the customer here — the design decision belongs to this skill — and re-hand the corrected spec.
 
 ---
 
@@ -405,124 +431,21 @@ COALESCE/ISNULL cols. Checksum always compares two sides.
 
 **Columns:** Only from `list_connection_metadata(entity="column")`. Never copy from ETL code without verification. Never propose Rule Plan until all schemas/tables/columns confirmed. For file connections, only use columns returned by `fetch_file_sample_data`.
 
-**Process:** Complete Step 5 before Rule Plan. Present full plan before any create_* call. Pull `get_guidance('create_<rule_type>_rules')` for each rule type — it has the exact parameters and avoids guessing. Tier 3/4: one layer boundary at a time.
+**Process:** This skill calls NO `create_*` or `update_rule` tools — creation belongs to
+`icedq-author-rules` Build mode via rule specs. Complete Step 5 before the Rule Plan. Present the
+full plan and get explicit approval before handing any spec to Build mode. Tier 3/4: one layer
+boundary at a time.
 
-**File connections:** NEVER call create_validation_rule / create_recon_rule / create_checksum_rule / create_pushdown_rule directly for file connections. Always start with `fetch_file_sample_data`. The draft rule is then completed via `update_rule`.
+**File connections:** file schemas are registered with `fetch_file_sample_data` during Step 1 (this
+creates a draft rule — carry its ruleId in the spec as `existingDraftRuleId`; Build mode completes
+it via `update_rule`).
 
 **SQL queries:** Validate Checksum/Pushdown SQL via `fetch_db_sample_data` in Step 5, before the Rule Plan — not at
 creation time. NULL result or query failure → engine exit code -4 at runtime. Cast at row level before aggregating;
 COALESCE aggregates against empty-table NULL.
 
-**S.[col] vs T.[col] — CRITICAL:**
-
-- Validation rules → ALWAYS S.[col]. Engine presents all rows as "source" side.
-- T.[col] → ONLY in Recon rules (S.[col]=source, T.[col]=target).
-- T.[col] in Validation → errorCount=total rows, successCount=0 (confirmed 100% error rate).
-
-**Snowflake NUMERIC/BigDecimal — CRITICAL:**
-
-- Snowflake NUMBER/DECIMAL → Java BigDecimal. Raw operators (!=0, >=0) throw ClassCastException → 100% error rate.
-- Use: `S.[col].compareTo(java.math.BigDecimal.ZERO)!=0 / >0 / >=0`
-- Tolerance: `(S.[A].subtract(S.[B].multiply(S.[C]))).abs().compareTo(new java.math.BigDecimal("0.01"))<=0`
-- SQL Server INT/DOUBLE → direct operators safe. TEXT numeric →
-  `S.[col]==~/^-?\d+(\.\d+)?$/ && new BigDecimal(S.[col])>0`
-- Confirm via `fetch_db_sample_data` + `typeof()` before writing arithmetic.
-
-**DATE / TIMESTAMP expressions (canonical — use exactly):**
-
-**iceDQ date parsing — always use `new Date().parse("fmt", value)` (from Groovy_Expressions_Overview.xlsx):**
-
-- `new Date().parse("fmt", S.[col])` is the iceDQ-native form for TEXT→Date conversion.
-- `Date.parse('fmt','literal')` works for hardcoded date constants only. NOT for field values.
-- `new java.text.SimpleDateFormat().parse()` is not the preferred pattern in iceDQ Groovy — use `new Date().parse()`.
-
-**DATE/TIMESTAMP col (icedqDatatype DATE or TIMESTAMP) — already a Java Date object:**
-
-- Null + future guard: `S.[col]!=null && S.[col]<=new Date()`
-- Year compare: `S.[col]!=null && S.[col]>new Date().parse('yyyy','2014')`
-- Range:
-  `S.[col]!=null && S.[col]>=new Date().parse('yyyy-MM-dd','2020-01-01') && S.[col]<=new Date().parse('yyyy-MM-dd','2024-12-31')`
-- Ordering (both DATE cols): `S.[start]!=null && S.[end]!=null && !S.[end].before(S.[start])`
-- Strip time: `S.[col]!=null && S.[col].clearTime()`
-- Format to string: `S.[col].format("yyyy-MM-dd")`
-- Calendar — extract parts:
-  `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.get(Calendar.YEAR)` (also MONTH, DAY_OF_MONTH, DAY_OF_WEEK,
-  WEEK_OF_YEAR, DAY_OF_YEAR)
-- Calendar — add time:
-  `def cal=Calendar.getInstance(); cal.setTime(S.[col]); cal.add(Calendar.MONTH,N); cal.getTime()`
-- Date diff in days: `(S.[col1]-S.[col2]).abs()`
-
-**TEXT col (string-stored date) — regex guard first, then new Date().parse():**
-
-- dd/MM/yyyy guard: `S.[col]!=null && S.[col]==~/^\d{2}\/\d{2}\/\d{4}$/`
-- dd/MM/yyyy HH:mm:ss guard: `S.[col]!=null && S.[col]==~/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/`
-- yyyyMMdd guard: `S.[col]!=null && S.[col]==~/^\d{8}$/`
-- yyyy-MM-dd guard: `S.[col]!=null && S.[col]==~/^\d{4}-\d{2}-\d{2}$/`
-- yyyy-MM-ddTHH:mm:ss guard: `S.[col]!=null && S.[col]==~/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/`
-- Parse validity (Validation only — try/catch NOT valid in Recon):
-  `S.[col]!=null && { try{new Date().parse("dd/MM/yyyy",S.[col]);true}catch(e){false} }`
-- Convert TEXT→Date: `def d = new Date().parse("yyyy-MM-dd", S.[col])`
-- Convert TEXT→reformatted string: `new Date().parse("yyyy-MM-dd", S.[col]).format("yyyy-MM-dd")`
-- Ordering (NEVER >= on TEXT date strings — lexicographic ≠ chronological):
-  `S.[start]!=null && S.[end]!=null && new Date().parse("dd/MM/yyyy",S.[start]).before(new Date().parse("dd/MM/yyyy",S.[end]))`
-- Date diff two TEXT cols: `(new Date().parse("yyyy-MM-dd",S.[col1])-new Date().parse("yyyy-MM-dd",S.[col2])).abs()`
-
-**instanceof guard — for columns that may be DATE or TEXT depending on platform:**
-
--
-`if(!(S.[col] instanceof Date)) { def d=new Date().parse("yyyy-MM-dd",S.[col]); d.equals(T.[col]) } else { S.[col].equals(T.[col]) }`
-
-**Recon cross-format — target DATE always use .toString().substring(0,10) or .format():**
-
-- src TEXT yyyy-MM-dd HH:mm:ss → tgt DATE (Essential):
-  `S.[col]!=null&&T.[col]!=null&&S.[col].substring(0,10)==T.[col].toString().substring(0,10)`
-- src TEXT yyyy-MM-dd HH:mm:ss → tgt DATE (nullable):
-  `S.[col]==null?T.[col]==null:T.[col]!=null&&S.[col].substring(0,10)==T.[col].toString().substring(0,10)`
-- src TEXT dd/MM/yyyy → tgt DATE:
-  `S.[col]!=null&&T.[col]!=null&&new Date().parse("dd/MM/yyyy",S.[col]).format("yyyy-MM-dd")==T.[col].toString().substring(0,10)`
-- src DATE → tgt TEXT yyyy-MM-dd: `S.[col]!=null&&T.[col]!=null&&S.[col].format("yyyy-MM-dd")==T.[col]`
-- src DATE → tgt TEXT dd/MM/yyyy: `S.[col]!=null&&T.[col]!=null&&S.[col].format("dd/MM/yyyy")==T.[col]`
-
-**Decision tree — always check icedqDatatype first:**
-
-1. DATE/TIMESTAMP → Java Date → use `.before()`, `.after()`, `.clearTime()`, `.format()`, Calendar API
-2. TEXT → string → regex guard, then `new Date().parse("fmt", S.[col])` to convert
-3. Unknown/mixed → `instanceof Date` guard
-   Call `fetch_db_sample_data` (DB) or inspect `fetch_file_sample_data` data rows (File) to confirm actual runtime type before writing any date expression.
-
-**Type conversion (TEXT columns holding numeric values):**
-
-- Preferred (reliable): `Integer.parseInt(S.[col])`, `Double.parseDouble(S.[col])`, `Float.parseFloat(S.[col])`
-- Alternative (may not always work): `S.[col].toInteger()`, `S.[col].toDouble()`, `S.[col].toFloat()`
-- Number→String: `S.[col].toString()`
-- Null-safe cast: `S.[col]!=null && Integer.parseInt(S.[col])>=0`
-
-**Tool argument anti-patterns — CRITICAL (confirmed failures across ETL types):**
-
-| Tool | Forbidden argument | Correct behaviour |
-|------|--------------------|-------------------|
-| `create_pushdown_rule` | `databaseName`, `schemaName` | Not supported → remove both; connection + SQL are sufficient |
-| `execute_rules_or_workflows` | `ids` | Use `objectIds` (array of rule/workflow IDs) |
-| `execute_rules_or_workflows` | `type` | Not supported → remove it |
-
-**`databaseName` — 2-tier vs 3-tier connections:**
-- **Azure SQL** does NOT support 3-part names (`db.schema.table`). Pass `databaseName: ""` (empty string) for:
-  `list_connection_metadata`, `fetch_db_sample_data`. Passing the actual database name causes HTTP 400 `ResourceNotFound`.
-- **Rule creation tools** (`create_validation_rule`, `create_checksum_rule`, `create_recon_rule`, `create_duplicate_rule`):
-  use the actual database name for 3-tier connectors (SQL Server on-prem, Databricks, Snowflake); omit or pass `""` for Azure SQL.
-- **Databricks / Snowflake**: pass the real catalog/database name as usual (3-tier: catalog.schema.table).
-
-**Arithmetic overflow — SUM on large integer columns:**
-- `SUM(ACCT_BAL)` where `ACCT_BAL` is INT → SQL Server throws arithmetic overflow for large datasets.
-- Always cast at row level before aggregating: `SUM(CAST(col AS BIGINT))` or `SUM(CAST(col AS DECIMAL(18,2)))`.
-- Never `CAST(SUM(col) AS DECIMAL)` — this casts the overflow result, not the individual values.
-- Confirm via `fetch_db_sample_data` on the Checksum SQL before creating the rule.
-
-**Recon date ANTI-PATTERNS — CRITICAL (confirmed production failures):**
-
-- `SimpleDateFormat.format(T.[col])` on DATE icedqDatatype → throws. Use `T.[col].toString().substring(0,10)` or
-  `T.[col].format("yyyy-MM-dd")`.
-- `T.containsKey('col')` → NOT SUPPORTED. Orphan rows have T.[col]=null. Use `T.[col]==null` guard.
-- `try/catch` in Recon expressions → NOT SUPPORTED. Only valid in Validation Custom checks.
-- `Date.parse('fmt', S.[col])` with field variable → unreliable. Use `new Date().parse("fmt", S.[col])`.
-- `>= / <=` on TEXT date strings → wrong. Always parse first with `new Date().parse()`.
+**Expression & platform recipes:** ALL canonical Groovy expressions (dates, BigDecimal, type
+conversion), S.[col]/T.[col] context rules, Recon expression anti-patterns, and tool-argument
+gotchas live in [references/groovy-recipes.md](references/groovy-recipes.md). Read the relevant
+section before writing ANY expression into a rule spec — these encode confirmed production
+failures.
