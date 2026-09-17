@@ -91,6 +91,15 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: 'true' # public repo — enables npm provenance attestation
           NPM_TAG: ${{ github.event_name == 'release' && (github.event.release.prerelease && 'beta' || 'latest') || (github.event.inputs.tag || 'latest') }}
+      - name: Repoint dist-tag when version was already published
+        # publish --tag never ran above, so this run's intended tag (e.g. a
+        # corrected "latest" after a mis-flagged pre-release) was never set.
+        # Move the tag explicitly instead of leaving it stuck on whatever the
+        # earlier successful publish used.
+        if: steps.npm_check.outputs.already_published == 'true'
+        run: npm dist-tag add "$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")" "$NPM_TAG"
+        env:
+          NPM_TAG: ${{ github.event_name == 'release' && (github.event.release.prerelease && 'beta' || 'latest') || (github.event.inputs.tag || 'latest') }}
 
   publish-mcp-registry:
     needs: publish

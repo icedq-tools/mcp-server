@@ -1,11 +1,11 @@
 {
   "name": "@icedq/mcp-server",
   "mcpName": "io.github.icedq-tools/mcp-server",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "MCP server for iceDQ Data Reliability Platform — 48 tools for validation, reconciliation, duplicate detection, scheduling, and data exploration.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/icedq-tools/mcp-server.git"
+    "url": "https://github.com/icedq-tools/mcp-server.git"
   },
   "main": "icedq-mcp-server.js",
   "type": "module",
@@ -28,20 +28,25 @@
   ],
   "author": "iceDQ Integration Team",
   "license": "Apache-2.0",
+  "homepage": "https://docs.icedq.com/guides/mcp-server/intro",
   "bugs": {
     "email": "getsupport@icedq.com"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
+    "@napi-rs/keyring": "^2.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^7.0.0",
+    "js-yaml": "^5.4.1",
     "jsonwebtoken": "^9.0.3",
-    "keytar": "^7.9.0",
-    "open": "^11.0.0"
+    "open": "^11.0.0",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "c8": "^10.1.3",
     "esbuild": "^0.28.0"
   },
   "publishConfig": {

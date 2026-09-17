@@ -1,6 +1,6 @@
 {
   "name": "icedq-marketplace",
-  "version": "2.0.2-beta",
+  "version": "2.0.3",
   "description": "Official iceDQ plugins for Claude — data quality authoring, execution, and scheduling backed by the iceDQ MCP server.",
   "owner": {
     "name": "iceDQ Integration Team",

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://cdn-ildhhnd.nitrocdn.com/lLTTsRqXojmKENiGvwrypcTvmrbIWtKJ/assets/images/source/rev-633e7cc/icedq.com/wp-content/uploads/2025/01/icedq-logo.svg" alt="iceDQ Logo" width="80" />
+</p>
+
 <h1 align="center">iceDQ MCP Server</h1>
 
 <p align="center">
@@ -12,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.2-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-2.0.3-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/license-Apache_2.0-green.svg" alt="License" />
   <img src="https://img.shields.io/badge/VS_Code-1.101%2B-brightgreen.svg" alt="VS Code" />
 </p>
