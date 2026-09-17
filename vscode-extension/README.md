@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn-ildhhnd.nitrocdn.com/lLTTsRqXojmKENiGvwrypcTvmrbIWtKJ/assets/images/source/rev-633e7cc/icedq.com/wp-content/uploads/2025/01/icedq-logo.svg" alt="iceDQ Logo" width="80" />
+  <img src="icon.png" alt="iceDQ Logo" width="80" />
 </p>
 
 <h1 align="center">iceDQ MCP Server</h1>
