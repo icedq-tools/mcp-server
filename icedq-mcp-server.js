@@ -24110,54 +24110,6 @@ var require_decode = __commonJS({
   }
 });
 
-// node_modules/jsonwebtoken/lib/JsonWebTokenError.js
-var require_JsonWebTokenError = __commonJS({
-  "node_modules/jsonwebtoken/lib/JsonWebTokenError.js"(exports, module) {
-    var JsonWebTokenError = function(message, error2) {
-      Error.call(this, message);
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, this.constructor);
-      }
-      this.name = "JsonWebTokenError";
-      this.message = message;
-      if (error2) this.inner = error2;
-    };
-    JsonWebTokenError.prototype = Object.create(Error.prototype);
-    JsonWebTokenError.prototype.constructor = JsonWebTokenError;
-    module.exports = JsonWebTokenError;
-  }
-});
-
-// node_modules/jsonwebtoken/lib/NotBeforeError.js
-var require_NotBeforeError = __commonJS({
-  "node_modules/jsonwebtoken/lib/NotBeforeError.js"(exports, module) {
-    var JsonWebTokenError = require_JsonWebTokenError();
-    var NotBeforeError = function(message, date3) {
-      JsonWebTokenError.call(this, message);
-      this.name = "NotBeforeError";
-      this.date = date3;
-    };
-    NotBeforeError.prototype = Object.create(JsonWebTokenError.prototype);
-    NotBeforeError.prototype.constructor = NotBeforeError;
-    module.exports = NotBeforeError;
-  }
-});
-
-// node_modules/jsonwebtoken/lib/TokenExpiredError.js
-var require_TokenExpiredError = __commonJS({
-  "node_modules/jsonwebtoken/lib/TokenExpiredError.js"(exports, module) {
-    var JsonWebTokenError = require_JsonWebTokenError();
-    var TokenExpiredError = function(message, expiredAt) {
-      JsonWebTokenError.call(this, message);
-      this.name = "TokenExpiredError";
-      this.expiredAt = expiredAt;
-    };
-    TokenExpiredError.prototype = Object.create(JsonWebTokenError.prototype);
-    TokenExpiredError.prototype.constructor = TokenExpiredError;
-    module.exports = TokenExpiredError;
-  }
-});
-
 // node_modules/jsonwebtoken/lib/timespan.js
 var require_timespan = __commonJS({
   "node_modules/jsonwebtoken/lib/timespan.js"(exports, module) {
@@ -26173,6 +26125,14 @@ var require_semver2 = __commonJS({
   }
 });
 
+// node_modules/jsonwebtoken/lib/psSupported.js
+var require_psSupported = __commonJS({
+  "node_modules/jsonwebtoken/lib/psSupported.js"(exports, module) {
+    var semver = require_semver2();
+    module.exports = semver.satisfies(process.version, "^6.12.0 || >=8.0.0");
+  }
+});
+
 // node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js
 var require_asymmetricKeyDetailsSupported = __commonJS({
   "node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js"(exports, module) {
@@ -26238,229 +26198,6 @@ var require_validateAsymmetricKey = __commonJS({
             break;
         }
       }
-    };
-  }
-});
-
-// node_modules/jsonwebtoken/lib/psSupported.js
-var require_psSupported = __commonJS({
-  "node_modules/jsonwebtoken/lib/psSupported.js"(exports, module) {
-    var semver = require_semver2();
-    module.exports = semver.satisfies(process.version, "^6.12.0 || >=8.0.0");
-  }
-});
-
-// node_modules/jsonwebtoken/verify.js
-var require_verify = __commonJS({
-  "node_modules/jsonwebtoken/verify.js"(exports, module) {
-    var JsonWebTokenError = require_JsonWebTokenError();
-    var NotBeforeError = require_NotBeforeError();
-    var TokenExpiredError = require_TokenExpiredError();
-    var decode3 = require_decode();
-    var timespan = require_timespan();
-    var validateAsymmetricKey = require_validateAsymmetricKey();
-    var PS_SUPPORTED = require_psSupported();
-    var jws = require_jws();
-    var { KeyObject, createSecretKey, createPublicKey } = __require("crypto");
-    var PUB_KEY_ALGS = ["RS256", "RS384", "RS512"];
-    var EC_KEY_ALGS = ["ES256", "ES384", "ES512"];
-    var RSA_KEY_ALGS = ["RS256", "RS384", "RS512"];
-    var HS_ALGS = ["HS256", "HS384", "HS512"];
-    if (PS_SUPPORTED) {
-      PUB_KEY_ALGS.splice(PUB_KEY_ALGS.length, 0, "PS256", "PS384", "PS512");
-      RSA_KEY_ALGS.splice(RSA_KEY_ALGS.length, 0, "PS256", "PS384", "PS512");
-    }
-    module.exports = function(jwtString, secretOrPublicKey, options, callback) {
-      if (typeof options === "function" && !callback) {
-        callback = options;
-        options = {};
-      }
-      if (!options) {
-        options = {};
-      }
-      options = Object.assign({}, options);
-      let done;
-      if (callback) {
-        done = callback;
-      } else {
-        done = function(err, data) {
-          if (err) throw err;
-          return data;
-        };
-      }
-      if (options.clockTimestamp && typeof options.clockTimestamp !== "number") {
-        return done(new JsonWebTokenError("clockTimestamp must be a number"));
-      }
-      if (options.nonce !== void 0 && (typeof options.nonce !== "string" || options.nonce.trim() === "")) {
-        return done(new JsonWebTokenError("nonce must be a non-empty string"));
-      }
-      if (options.allowInvalidAsymmetricKeyTypes !== void 0 && typeof options.allowInvalidAsymmetricKeyTypes !== "boolean") {
-        return done(new JsonWebTokenError("allowInvalidAsymmetricKeyTypes must be a boolean"));
-      }
-      const clockTimestamp = options.clockTimestamp || Math.floor(Date.now() / 1e3);
-      if (!jwtString) {
-        return done(new JsonWebTokenError("jwt must be provided"));
-      }
-      if (typeof jwtString !== "string") {
-        return done(new JsonWebTokenError("jwt must be a string"));
-      }
-      const parts = jwtString.split(".");
-      if (parts.length !== 3) {
-        return done(new JsonWebTokenError("jwt malformed"));
-      }
-      let decodedToken;
-      try {
-        decodedToken = decode3(jwtString, { complete: true });
-      } catch (err) {
-        return done(err);
-      }
-      if (!decodedToken) {
-        return done(new JsonWebTokenError("invalid token"));
-      }
-      const header = decodedToken.header;
-      let getSecret;
-      if (typeof secretOrPublicKey === "function") {
-        if (!callback) {
-          return done(new JsonWebTokenError("verify must be called asynchronous if secret or public key is provided as a callback"));
-        }
-        getSecret = secretOrPublicKey;
-      } else {
-        getSecret = function(header2, secretCallback) {
-          return secretCallback(null, secretOrPublicKey);
-        };
-      }
-      return getSecret(header, function(err, secretOrPublicKey2) {
-        if (err) {
-          return done(new JsonWebTokenError("error in secret or public key callback: " + err.message));
-        }
-        const hasSignature = parts[2].trim() !== "";
-        if (!hasSignature && secretOrPublicKey2) {
-          return done(new JsonWebTokenError("jwt signature is required"));
-        }
-        if (hasSignature && !secretOrPublicKey2) {
-          return done(new JsonWebTokenError("secret or public key must be provided"));
-        }
-        if (!hasSignature && !options.algorithms) {
-          return done(new JsonWebTokenError('please specify "none" in "algorithms" to verify unsigned tokens'));
-        }
-        if (secretOrPublicKey2 != null && !(secretOrPublicKey2 instanceof KeyObject)) {
-          try {
-            secretOrPublicKey2 = createPublicKey(secretOrPublicKey2);
-          } catch (_) {
-            try {
-              secretOrPublicKey2 = createSecretKey(typeof secretOrPublicKey2 === "string" ? Buffer.from(secretOrPublicKey2) : secretOrPublicKey2);
-            } catch (_2) {
-              return done(new JsonWebTokenError("secretOrPublicKey is not valid key material"));
-            }
-          }
-        }
-        if (!options.algorithms) {
-          if (secretOrPublicKey2.type === "secret") {
-            options.algorithms = HS_ALGS;
-          } else if (["rsa", "rsa-pss"].includes(secretOrPublicKey2.asymmetricKeyType)) {
-            options.algorithms = RSA_KEY_ALGS;
-          } else if (secretOrPublicKey2.asymmetricKeyType === "ec") {
-            options.algorithms = EC_KEY_ALGS;
-          } else {
-            options.algorithms = PUB_KEY_ALGS;
-          }
-        }
-        if (options.algorithms.indexOf(decodedToken.header.alg) === -1) {
-          return done(new JsonWebTokenError("invalid algorithm"));
-        }
-        if (header.alg.startsWith("HS") && secretOrPublicKey2.type !== "secret") {
-          return done(new JsonWebTokenError(`secretOrPublicKey must be a symmetric key when using ${header.alg}`));
-        } else if (/^(?:RS|PS|ES)/.test(header.alg) && secretOrPublicKey2.type !== "public") {
-          return done(new JsonWebTokenError(`secretOrPublicKey must be an asymmetric key when using ${header.alg}`));
-        }
-        if (!options.allowInvalidAsymmetricKeyTypes) {
-          try {
-            validateAsymmetricKey(header.alg, secretOrPublicKey2);
-          } catch (e) {
-            return done(e);
-          }
-        }
-        let valid;
-        try {
-          valid = jws.verify(jwtString, decodedToken.header.alg, secretOrPublicKey2);
-        } catch (e) {
-          return done(e);
-        }
-        if (!valid) {
-          return done(new JsonWebTokenError("invalid signature"));
-        }
-        const payload = decodedToken.payload;
-        if (typeof payload.nbf !== "undefined" && !options.ignoreNotBefore) {
-          if (typeof payload.nbf !== "number") {
-            return done(new JsonWebTokenError("invalid nbf value"));
-          }
-          if (payload.nbf > clockTimestamp + (options.clockTolerance || 0)) {
-            return done(new NotBeforeError("jwt not active", new Date(payload.nbf * 1e3)));
-          }
-        }
-        if (typeof payload.exp !== "undefined" && !options.ignoreExpiration) {
-          if (typeof payload.exp !== "number") {
-            return done(new JsonWebTokenError("invalid exp value"));
-          }
-          if (clockTimestamp >= payload.exp + (options.clockTolerance || 0)) {
-            return done(new TokenExpiredError("jwt expired", new Date(payload.exp * 1e3)));
-          }
-        }
-        if (options.audience) {
-          const audiences = Array.isArray(options.audience) ? options.audience : [options.audience];
-          const target = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-          const match = target.some(function(targetAudience) {
-            return audiences.some(function(audience) {
-              return audience instanceof RegExp ? audience.test(targetAudience) : audience === targetAudience;
-            });
-          });
-          if (!match) {
-            return done(new JsonWebTokenError("jwt audience invalid. expected: " + audiences.join(" or ")));
-          }
-        }
-        if (options.issuer) {
-          const invalid_issuer = typeof options.issuer === "string" && payload.iss !== options.issuer || Array.isArray(options.issuer) && options.issuer.indexOf(payload.iss) === -1;
-          if (invalid_issuer) {
-            return done(new JsonWebTokenError("jwt issuer invalid. expected: " + options.issuer));
-          }
-        }
-        if (options.subject) {
-          if (payload.sub !== options.subject) {
-            return done(new JsonWebTokenError("jwt subject invalid. expected: " + options.subject));
-          }
-        }
-        if (options.jwtid) {
-          if (payload.jti !== options.jwtid) {
-            return done(new JsonWebTokenError("jwt jwtid invalid. expected: " + options.jwtid));
-          }
-        }
-        if (options.nonce) {
-          if (payload.nonce !== options.nonce) {
-            return done(new JsonWebTokenError("jwt nonce invalid. expected: " + options.nonce));
-          }
-        }
-        if (options.maxAge) {
-          if (typeof payload.iat !== "number") {
-            return done(new JsonWebTokenError("iat required when maxAge is specified"));
-          }
-          const maxAgeTimestamp = timespan(options.maxAge, payload.iat);
-          if (typeof maxAgeTimestamp === "undefined") {
-            return done(new JsonWebTokenError('"maxAge" should be a number of seconds or string representing a timespan eg: "1d", "20h", 60'));
-          }
-          if (clockTimestamp >= maxAgeTimestamp + (options.clockTolerance || 0)) {
-            return done(new TokenExpiredError("maxAge exceeded", new Date(maxAgeTimestamp * 1e3)));
-          }
-        }
-        if (options.complete === true) {
-          const signature = decodedToken.signature;
-          return done(null, {
-            header,
-            payload,
-            signature
-          });
-        }
-        return done(null, payload);
-      });
     };
   }
 });
@@ -27112,12 +26849,59 @@ var require_sign = __commonJS({
   }
 });
 
+// node_modules/jsonwebtoken/lib/JsonWebTokenError.js
+var require_JsonWebTokenError = __commonJS({
+  "node_modules/jsonwebtoken/lib/JsonWebTokenError.js"(exports, module) {
+    var JsonWebTokenError = function(message, error2) {
+      Error.call(this, message);
+      if (Error.captureStackTrace) {
+        Error.captureStackTrace(this, this.constructor);
+      }
+      this.name = "JsonWebTokenError";
+      this.message = message;
+      if (error2) this.inner = error2;
+    };
+    JsonWebTokenError.prototype = Object.create(Error.prototype);
+    JsonWebTokenError.prototype.constructor = JsonWebTokenError;
+    module.exports = JsonWebTokenError;
+  }
+});
+
+// node_modules/jsonwebtoken/lib/NotBeforeError.js
+var require_NotBeforeError = __commonJS({
+  "node_modules/jsonwebtoken/lib/NotBeforeError.js"(exports, module) {
+    var JsonWebTokenError = require_JsonWebTokenError();
+    var NotBeforeError = function(message, date3) {
+      JsonWebTokenError.call(this, message);
+      this.name = "NotBeforeError";
+      this.date = date3;
+    };
+    NotBeforeError.prototype = Object.create(JsonWebTokenError.prototype);
+    NotBeforeError.prototype.constructor = NotBeforeError;
+    module.exports = NotBeforeError;
+  }
+});
+
+// node_modules/jsonwebtoken/lib/TokenExpiredError.js
+var require_TokenExpiredError = __commonJS({
+  "node_modules/jsonwebtoken/lib/TokenExpiredError.js"(exports, module) {
+    var JsonWebTokenError = require_JsonWebTokenError();
+    var TokenExpiredError = function(message, expiredAt) {
+      JsonWebTokenError.call(this, message);
+      this.name = "TokenExpiredError";
+      this.expiredAt = expiredAt;
+    };
+    TokenExpiredError.prototype = Object.create(JsonWebTokenError.prototype);
+    TokenExpiredError.prototype.constructor = TokenExpiredError;
+    module.exports = TokenExpiredError;
+  }
+});
+
 // node_modules/jsonwebtoken/index.js
 var require_jsonwebtoken = __commonJS({
   "node_modules/jsonwebtoken/index.js"(exports, module) {
     module.exports = {
       decode: require_decode(),
-      verify: require_verify(),
       sign: require_sign(),
       JsonWebTokenError: require_JsonWebTokenError(),
       NotBeforeError: require_NotBeforeError(),
@@ -42319,7 +42103,7 @@ var TOOLS = [
           type: "object",
           description: "Optional: Additional rule configuration. Supported fields: criticality, parameterId, parameterName, stopAtFailAndErrorCount, stopAtRowCount, stopAtTime, exceptionReportConfig.",
           properties: {
-            criticality: { type: "string", description: "Rule criticality level: 'Warning' (default), 'Error', 'Blocker', or 'Info'. Determines failure severity and alerting behavior.", enum: ["Warning", "Error", "Blocker", "Info"] },
+            criticality: { type: "string", description: "Rule criticality level: 'Warning' (default), 'Critical', or 'Blocker'. Determines failure severity and alerting behavior." },
             parameterId: { type: "string", description: "Parameter UUID (format: parm-{uuid}). Binds the rule to a parameter container for dynamic SQL/filePath substitution." },
             parameterName: { type: "string", description: "Parameter container name matching the parameterId" },
             stopAtFailAndErrorCount: { type: "number", description: "Update: stop rule when failure/error count reaches this value. Only the provided fields are changed on the existing rule." },
@@ -43439,7 +43223,7 @@ var TOOLS = [
             },
             criticality: {
               type: "string",
-              description: "Rule criticality level. Default: 'Warning'. Use 'Warning', 'Error', or 'Info'.",
+              description: "Rule criticality level. Default: 'Warning'. Use 'Warning', 'Critical', or 'Blocker'.",
               default: "Warning"
             },
             dqDimension: {

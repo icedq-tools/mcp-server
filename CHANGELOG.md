@@ -4,7 +4,7 @@ All notable changes to the iceDQ MCP Server project are documented in this file.
 
 ---
 
-## [2.0.0] - 2026-09-15
+## [2.0.3] - 2026-09-17
 
 ### Features
 - **API connectors** — fetch sample data from REST APIs and author API Validation and

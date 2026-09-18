@@ -2,7 +2,7 @@
   "name": "mcp-server",
   "displayName": "iceDQ MCP",
   "description": "The  iceDQ MCP Server lets you manage your entire data quality lifecycle through conversation with an AI assistant. Ask it to explore your data sources, create validation rules, run reconciliations, monitor executions, and analyze results.",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "publisher": "icedq",
   "license": "Apache-2.0",
   "icon": "icon.png",
